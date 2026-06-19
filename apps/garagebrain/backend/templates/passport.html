@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Паспорт автомобиля</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            color: #2563eb;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            background: #f0f4ff;
+            color: #2563eb;
+            padding: 8px 12px;
+            font-size: 16px;
+            border-left: 4px solid #2563eb;
+            margin-bottom: 12px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label { color: #666; font-size: 14px; }
+        .info-value { font-weight: 500; font-size: 14px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            background: #f0f4ff;
+            color: #2563eb;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .total-row {
+            font-weight: bold;
+            background: #f8f9fa;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            color: #999;
+            font-size: 12px;
+        }
+        .cost { color: #dc2626; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Паспорт автомобиля</h1>
+        <div class="subtitle">GarageBrain — {{.Car.Brand}} {{.Car.Model}}</div>
+    </div>
+
+    <div class="section">
+        <h2>Общая информация</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Марка и модель</span>
+                <span class="info-value">{{.Car.Brand}} {{.Car.Model}}</span>
+            </div>
+            {{if .Car.Year}}
+            <div class="info-item">
+                <span class="info-label">Год выпуска</span>
+                <span class="info-value">{{.Car.Year}}</span>
+            </div>
+            {{end}}
+            <div class="info-item">
+                <span class="info-label">Текущий пробег</span>
+                <span class="info-value">{{.Car.Mileage}} км</span>
+            </div>
+            {{if .Car.Color}}
+            <div class="info-item">
+                <span class="info-label">Цвет</span>
+                <span class="info-value">{{.Car.Color}}</span>
+            </div>
+            {{end}}
+            {{if .Car.Engine}}
+            <div class="info-item">
+                <span class="info-label">Двигатель</span>
+                <span class="info-value">{{.Car.Engine}}</span>
+            </div>
+            {{end}}
+            {{if .Car.Drive}}
+            <div class="info-item">
+                <span class="info-label">Привод</span>
+                <span class="info-value">{{.Car.Drive}}</span>
+            </div>
+            {{end}}
+            {{if .Car.VIN}}
+            <div class="info-item">
+                <span class="info-label">VIN</span>
+                <span class="info-value">{{.Car.VIN}}</span>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>История обслуживания</h2>
+        {{if .Records}}
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Тип</th>
+                    <th>Описание</th>
+                    <th>Пробег</th>
+                    <th>Стоимость</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Records}}
+                <tr>
+                    <td>{{.Date.Format "02.01.2006"}}</td>
+                    <td>{{.Type}}</td>
+                    <td>{{.Title}}</td>
+                    <td>{{if .Mileage}}{{.Mileage}} км{{else}}—{{end}}</td>
+                    <td class="cost">{{if .Cost}}{{.Cost}} ₽{{else}}—{{end}}</td>
+                </tr>
+                {{end}}
+                <tr class="total-row">
+                    <td colspan="4">Итого</td>
+                    <td class="cost">{{.TotalCost}} ₽</td>
+                </tr>
+            </tbody>
+        </table>
+        {{else}}
+        <p style="padding: 0 12px; color: #999;">Записей обслуживания пока нет.</p>
+        {{end}}
+    </div>
+
+    <div class="footer">
+        Сгенерировано GarageBrain · {{.Date}}
+    </div>
+</body>
+</html>

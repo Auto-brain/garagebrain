@@ -1,0 +1,16 @@
+[Unit]
+Description=GarageBrain Gateway
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/garagebrain
+ExecStart=/var/www/garagebrain/bin/gateway
+Restart=always
+RestartSec=5
+EnvironmentFile=/var/www/garagebrain/.env
+MemoryLimit=100M
+
+[Install]
+WantedBy=multi-user.target

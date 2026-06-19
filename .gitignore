@@ -1,0 +1,30 @@
+# Binaries
+apps/*/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Dependencies
+apps/*/node_modules/
+apps/*/vendor/
+node_modules/
+
+# Build
+apps/*/dist/
+.vite/
+
+# Environment
+.env
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
