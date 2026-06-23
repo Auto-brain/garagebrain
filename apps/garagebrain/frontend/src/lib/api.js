@@ -75,6 +75,29 @@ export const api = {
       body: JSON.stringify(reminder),
     }),
 
+  getFuel: (carId) => request(`/cars/${carId}/fuel`),
+
+  getFuelStats: (carId) => request(`/cars/${carId}/fuel/stats`),
+
+  uploadPhoto: (carId, file, recordId = 'latest') => {
+    const token = localStorage.getItem('token');
+    const form = new FormData();
+    form.append('car_id', carId);
+    form.append('record_id', recordId);
+    form.append('file', file);
+    return fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      return data;
+    });
+  },
+
+  getVapidKey: () => request('/push/vapid'),
+
   subscribePush: (subscription) =>
     request('/push/subscribe', {
       method: 'POST',

@@ -17,6 +17,10 @@ func ListRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, ok := authorizeCar(w, r, carID); !ok {
+		return
+	}
+
 	recType := r.URL.Query().Get("type")
 	limit := 50
 	if l := r.URL.Query().Get("limit"); l != "" {
@@ -42,6 +46,10 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 
 	if req.Type == "" || req.Title == "" || req.Date == "" {
 		http.Error(w, `{"error":"type, title, and date required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if _, ok := authorizeCar(w, r, req.CarID); !ok {
 		return
 	}
 

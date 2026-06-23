@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/SherClockHolmes/webpush"
+	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/auto-brain/garagebrain/internal/middleware"
 	"github.com/auto-brain/garagebrain/internal/service"
 )
@@ -19,6 +19,12 @@ var pushSvc *service.PushService
 
 func InitPushHandler(svc *service.PushService) {
 	pushSvc = svc
+}
+
+// VapidKey отдаёт публичный VAPID-ключ, нужный фронтенду для подписки на push.
+func VapidKey(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"public_key": pushSvc.PublicKey()})
 }
 
 func SubscribePush(w http.ResponseWriter, r *http.Request) {

@@ -16,12 +16,13 @@ type ParsedResponse struct {
 }
 
 type ParsedRecord struct {
-	Type        string
-	Title       string
-	Date        time.Time
-	Mileage     int
-	Cost        int
-	NextAction  string
+	Type       string
+	Title      string
+	Date       time.Time
+	Mileage    *int
+	Cost       *int
+	Liters     *float64
+	NextAction string
 }
 
 func ParseAIResponse(text string) ParsedResponse {
@@ -48,20 +49,31 @@ func parseRecord(text string) ParsedResponse {
 
 	fields := parseFields(match[1])
 
-	cost := 0
+	// Стоимость/пробег/литры остаются nil, если AI их не указал —
+	// иначе 0 искажает статистику и расход топлива.
+	var cost *int
 	costStr := strings.TrimSpace(fields["Стоимость"])
 	costStr = strings.TrimRight(costStr, " ₽рубRUB")
 	costStr = strings.ReplaceAll(costStr, " ", "")
 	if c, err := strconv.Atoi(costStr); err == nil {
-		cost = c
+		cost = &c
 	}
 
-	mileage := 0
+	var mileage *int
 	mileStr := strings.TrimSpace(fields["Пробег"])
 	mileStr = strings.TrimRight(mileStr, " км")
 	mileStr = strings.ReplaceAll(mileStr, " ", "")
 	if m, err := strconv.Atoi(mileStr); err == nil {
-		mileage = m
+		mileage = &m
+	}
+
+	var liters *float64
+	litStr := strings.TrimSpace(fields["Литры"])
+	litStr = strings.TrimRight(litStr, " лl")
+	litStr = strings.ReplaceAll(litStr, " ", "")
+	litStr = strings.ReplaceAll(litStr, ",", ".")
+	if l, err := strconv.ParseFloat(litStr, 64); err == nil && l > 0 {
+		liters = &l
 	}
 
 	record := &ParsedRecord{
@@ -70,6 +82,7 @@ func parseRecord(text string) ParsedResponse {
 		Date:       parseDate(fields["Дата"]),
 		Mileage:    mileage,
 		Cost:       cost,
+		Liters:     liters,
 		NextAction: fields["Следующее"],
 	}
 
@@ -101,7 +114,7 @@ func parseFields(text string) map[string]string {
 
 func normalizeType(t string) string {
 	switch strings.ToLower(t) {
-	case "service", "service", "ТО", "обслуживание":
+	case "service", "то", "обслуживание":
 		return "service"
 	case "repair", "ремонт":
 		return "repair"

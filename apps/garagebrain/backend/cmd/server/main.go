@@ -32,6 +32,9 @@ func main() {
 	handler.InitPushHandler(pushSvc)
 	handler.InitChatHandler()
 
+	storageSvc := service.NewStorage()
+	handler.InitUploadHandler(storageSvc)
+
 	go job.StartReminderJob(pushSvc)
 
 	r := chi.NewRouter()
@@ -63,9 +66,19 @@ func main() {
 			r.Get("/cars/{id}/passport", handler.GetPassport)
 			r.Get("/cars/{id}/reminders", handler.ListReminders)
 			r.Post("/reminders", handler.CreateReminder)
+			r.Get("/cars/{id}/fuel", handler.ListFuel)
+			r.Get("/cars/{id}/fuel/stats", handler.GetFuelStats)
+			r.Post("/fuel", handler.CreateFuel)
+			r.Post("/upload", handler.UploadPhoto)
+			r.Get("/push/vapid", handler.VapidKey)
 			r.Post("/push/subscribe", handler.SubscribePush)
 		})
 	})
+
+	// Статическая раздача загруженных фото (в production обычно отдаёт nginx,
+	// здесь — фолбэк для dev/standalone).
+	fileServer := http.FileServer(http.Dir(storageSvc.BaseDir()))
+	r.Handle(storageSvc.PublicPrefix()+"/*", http.StripPrefix(storageSvc.PublicPrefix()+"/", fileServer))
 
 	port := os.Getenv("PORT")
 	if port == "" {

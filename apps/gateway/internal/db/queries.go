@@ -156,16 +156,22 @@ type RecordRow struct {
 	Cost    *int
 }
 
-func GetDueReminders(ctx context.Context) ([]ReminderRow, error) {
+// GetDueTelegramReminders возвращает сработавшие напоминания только для
+// пользователей с Telegram-идентичностью (push-уведомления им шлёт не бэкенд,
+// а этот шлюз). Уже отправленные (last_triggered_at IS NOT NULL) отсекаются —
+// иначе ежечасный опрос слал бы их повторно.
+func GetDueTelegramReminders(ctx context.Context) ([]ReminderRow, error) {
 	rows, err := Pool.Query(ctx,
-		`SELECT r.id, r.car_id, r.title, r.type, c.brand, c.model, c.user_id
+		`SELECT r.id, r.car_id, r.title, r.type, c.brand, c.model, c.user_id, ui.platform_id
 		 FROM reminders r
 		 JOIN cars c ON r.car_id = c.id
+		 JOIN user_identities ui ON ui.user_id = c.user_id AND ui.platform = 'telegram'
 		 WHERE r.is_active = true
-		 AND (
-		   (r.type = 'date' AND r.trigger_date <= CURRENT_DATE)
-		   OR (r.type = 'mileage' AND r.trigger_mileage <= c.mileage)
-		 )`,
+		   AND r.last_triggered_at IS NULL
+		   AND (
+		     (r.type = 'date' AND r.trigger_date <= CURRENT_DATE)
+		     OR (r.type = 'mileage' AND r.trigger_mileage <= c.mileage)
+		   )`,
 	)
 	if err != nil {
 		return nil, err
@@ -175,7 +181,7 @@ func GetDueReminders(ctx context.Context) ([]ReminderRow, error) {
 	var reminders []ReminderRow
 	for rows.Next() {
 		var r ReminderRow
-		err := rows.Scan(&r.ID, &r.CarID, &r.Title, &r.Type, &r.CarBrand, &r.CarModel, &r.UserID)
+		err := rows.Scan(&r.ID, &r.CarID, &r.Title, &r.Type, &r.CarBrand, &r.CarModel, &r.UserID, &r.TelegramChatID)
 		if err != nil {
 			return nil, err
 		}
@@ -185,13 +191,14 @@ func GetDueReminders(ctx context.Context) ([]ReminderRow, error) {
 }
 
 type ReminderRow struct {
-	ID        string
-	CarID     string
-	Title     string
-	Type      string
-	CarBrand  string
-	CarModel  string
-	UserID    string
+	ID             string
+	CarID          string
+	Title          string
+	Type           string
+	CarBrand       string
+	CarModel       string
+	UserID         string
+	TelegramChatID string
 }
 
 func MarkReminderTriggered(ctx context.Context, reminderID string) error {

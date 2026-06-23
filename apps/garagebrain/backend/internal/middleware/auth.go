@@ -17,6 +17,11 @@ const UserIDKey contextKey = "user_id"
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			// Без секрета подпись невалидируема — отказываем, а не пропускаем.
+			http.Error(w, `{"error":"server misconfigured"}`, http.StatusInternalServerError)
+			return
+		}
 
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -26,8 +31,12 @@ func Auth(next http.Handler) http.Handler {
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			// Защита от alg-confusion: принимаем только HMAC.
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
 			return []byte(secret), nil
-		})
+		}, jwt.WithValidMethods([]string{"HS256"}))
 		if err != nil || !token.Valid {
 			http.Error(w, `{"error":"invalid token"}`, http.StatusUnauthorized)
 			return

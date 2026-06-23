@@ -16,9 +16,8 @@ func GetPassport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	car, err := db.GetCarByID(r.Context(), carID)
-	if err != nil {
-		http.Error(w, `{"error":"car not found"}`, http.StatusNotFound)
+	car, ok := authorizeCar(w, r, carID)
+	if !ok {
 		return
 	}
 

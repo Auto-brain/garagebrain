@@ -70,10 +70,9 @@ func (rl *RateLimiter) Allow(ip string) bool {
 
 func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// r.RemoteAddr уже нормализован chimw.RealIP (см. main.go) до реального
+		// IP клиента. Доверять сырому X-Forwarded-For нельзя — клиент его подделает.
 		ip := r.RemoteAddr
-		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-			ip = fwd
-		}
 
 		if !rl.Allow(ip) {
 			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)

@@ -9,7 +9,27 @@ export default function ChatWindow({ car, onAddCar }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [reminders, setReminders] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !car) return;
+    setUploading(true);
+    try {
+      const res = await api.uploadPhoto(car.id, file, 'latest');
+      const text = res.record_id
+        ? '📸 Фото чека прикреплено к последней записи.'
+        : '📸 Фото сохранено. Опишите обслуживание — и я привяжу его к записи.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Не удалось загрузить фото.' }]);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (car) {
@@ -130,6 +150,21 @@ export default function ChatWindow({ car, onAddCar }) {
 
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Прикрепить фото чека"
+            className="px-3 py-3 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-100 transition disabled:opacity-50"
+          >
+            {uploading ? '…' : '📎'}
+          </button>
           <input
             type="text"
             value={input}

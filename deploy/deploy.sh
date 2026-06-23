@@ -10,7 +10,7 @@ cd ../garagebrain/frontend && npm run build
 cd ../../..
 
 echo "Deploying to $DEPLOY_DIR..."
-sudo mkdir -p $DEPLOY_DIR/bin $DEPLOY_DIR/frontend/dist $DEPLOY_DIR/templates
+sudo mkdir -p $DEPLOY_DIR/bin $DEPLOY_DIR/frontend/dist $DEPLOY_DIR/templates $DEPLOY_DIR/uploads
 
 sudo cp apps/garagebrain/backend/bin/server $DEPLOY_DIR/bin/
 sudo cp apps/gateway/bin/gateway $DEPLOY_DIR/bin/

@@ -55,9 +55,8 @@ func GetCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	car, err := db.GetCarByID(r.Context(), carID)
-	if err != nil {
-		http.Error(w, `{"error":"car not found"}`, http.StatusNotFound)
+	car, ok := authorizeCar(w, r, carID)
+	if !ok {
 		return
 	}
 
@@ -69,6 +68,10 @@ func UpdateMileage(w http.ResponseWriter, r *http.Request) {
 	carID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, `{"error":"invalid car id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if _, ok := authorizeCar(w, r, carID); !ok {
 		return
 	}
 

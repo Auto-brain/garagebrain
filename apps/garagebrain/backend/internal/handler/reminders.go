@@ -17,6 +17,10 @@ func ListReminders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, ok := authorizeCar(w, r, carID); !ok {
+		return
+	}
+
 	reminders, err := db.GetRemindersByCar(r.Context(), carID)
 	if err != nil {
 		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
@@ -36,6 +40,10 @@ func CreateReminder(w http.ResponseWriter, r *http.Request) {
 
 	if req.Title == "" || req.Type == "" {
 		http.Error(w, `{"error":"title and type required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if _, ok := authorizeCar(w, r, req.CarID); !ok {
 		return
 	}
 

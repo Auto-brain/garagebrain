@@ -10,16 +10,20 @@ import (
 )
 
 type StatsResponse struct {
-	TotalCost     int               `json:"total_cost"`
-	RecordsByType map[string]int    `json:"records_by_type"`
-	MonthlyCosts  map[string]int    `json:"monthly_costs"`
-	RecordCount   int               `json:"record_count"`
+	TotalCost     int            `json:"total_cost"`
+	RecordsByType map[string]int `json:"records_by_type"`
+	MonthlyCosts  map[string]int `json:"monthly_costs"`
+	RecordCount   int            `json:"record_count"`
 }
 
 func GetStats(w http.ResponseWriter, r *http.Request) {
 	carID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, `{"error":"invalid car id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if _, ok := authorizeCar(w, r, carID); !ok {
 		return
 	}
 

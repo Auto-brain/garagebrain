@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/SherClockHolmes/webpush"
+	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/auto-brain/garagebrain/internal/db"
 	"github.com/google/uuid"
 )
@@ -21,6 +21,9 @@ func NewPushService() *PushService {
 		vapidPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 	}
 }
+
+// PublicKey возвращает VAPID-публичный ключ для подписки браузера на push.
+func (s *PushService) PublicKey() string { return s.vapidPublicKey }
 
 func (s *PushService) Subscribe(ctx context.Context, userID uuid.UUID, subscription webpush.Subscription) error {
 	subJSON, err := json.Marshal(subscription)
@@ -68,7 +71,7 @@ func (s *PushService) Send(ctx context.Context, userID uuid.UUID, payload PushPa
 			"url":   payload.URL,
 		})
 
-		resp, err := webpush.SendNotification(ctx, body, &subscription, &webpush.Options{
+		resp, err := webpush.SendNotification(body, &subscription, &webpush.Options{
 			VAPIDPublicKey:  s.vapidPublicKey,
 			VAPIDPrivateKey: s.vapidPrivateKey,
 		})

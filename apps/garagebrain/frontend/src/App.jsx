@@ -3,12 +3,16 @@ import { api } from './lib/api.js';
 import Header from './components/Header/Header.jsx';
 import ChatWindow from './components/Chat/ChatWindow.jsx';
 import HistorySidebar from './components/Sidebar/HistorySidebar.jsx';
+import StatusBar from './components/Layout/StatusBar.jsx';
+import ExpenseChart from './components/Stats/ExpenseChart.jsx';
+import PassportCard from './components/Car/PassportCard.jsx';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [cars, setCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [view, setView] = useState('auth');
+  const [tab, setTab] = useState('chat');
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
@@ -86,18 +90,34 @@ export default function App() {
         onLogout={handleLogout}
         onAddCar={() => setView('addcar')}
       />
-      <div className="flex-1 flex overflow-hidden">
-        <HistorySidebar
-          car={selectedCar}
-          onSelectRecord={(record) => {
-            setHistory([...history, record]);
-          }}
-        />
-        <ChatWindow
-          car={selectedCar}
-          onAddCar={() => setView('addcar')}
-        />
-      </div>
+      {selectedCar && <StatusBar car={selectedCar} />}
+
+      {selectedCar && (
+        <div className="flex gap-1 px-4 pt-2 bg-gray-50 border-b border-gray-200">
+          <TabButton active={tab === 'chat'} onClick={() => setTab('chat')}>Чат</TabButton>
+          <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>Статистика</TabButton>
+        </div>
+      )}
+
+      {tab === 'dashboard' && selectedCar ? (
+        <div className="flex-1 overflow-y-auto p-4 max-w-3xl w-full mx-auto space-y-6">
+          <PassportCard car={selectedCar} />
+          <ExpenseChart car={selectedCar} />
+        </div>
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          <HistorySidebar
+            car={selectedCar}
+            onSelectRecord={(record) => {
+              setHistory([...history, record]);
+            }}
+          />
+          <ChatWindow
+            car={selectedCar}
+            onAddCar={() => setView('addcar')}
+          />
+        </div>
+      )}
       {view === 'addcar' && (
         <AddCarModal
           onAdd={handleAddCar}
@@ -105,6 +125,19 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+function TabButton({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 text-sm font-medium rounded-t-lg transition ${
+        active ? 'bg-white text-blue-600 border border-b-0 border-gray-200' : 'text-gray-500 hover:text-gray-700'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
