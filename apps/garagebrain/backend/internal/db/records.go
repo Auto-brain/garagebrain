@@ -76,6 +76,36 @@ func AppendPhotoToRecord(ctx context.Context, carID, recordID uuid.UUID, url str
 	return photos, nil
 }
 
+// GetRecordCarID возвращает car_id записи (для проверки владельца перед правкой).
+func GetRecordCarID(ctx context.Context, recordID uuid.UUID) (uuid.UUID, error) {
+	var carID uuid.UUID
+	err := Pool.QueryRow(ctx, "SELECT car_id FROM service_records WHERE id = $1", recordID).Scan(&carID)
+	return carID, err
+}
+
+// UpdateRecord обновляет редактируемые поля записи обслуживания.
+func UpdateRecord(ctx context.Context, recordID uuid.UUID, req model.UpdateRecordRequest) (*model.ServiceRecord, error) {
+	var r model.ServiceRecord
+	err := Pool.QueryRow(ctx,
+		`UPDATE service_records
+		 SET type = $2, title = $3, description = $4, date = $5, mileage = $6, cost = $7
+		 WHERE id = $1
+		 RETURNING id, car_id, type, title, description, date, mileage, cost, parts, workshop, photos, raw_input, created_at`,
+		recordID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost,
+	).Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
+		&r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// DeleteRecord удаляет запись обслуживания.
+func DeleteRecord(ctx context.Context, recordID uuid.UUID) error {
+	_, err := Pool.Exec(ctx, "DELETE FROM service_records WHERE id = $1", recordID)
+	return err
+}
+
 // GetLatestRecordID возвращает id последней по дате записи авто.
 // pgx.ErrNoRows — если записей нет.
 func GetLatestRecordID(ctx context.Context, carID uuid.UUID) (uuid.UUID, error) {

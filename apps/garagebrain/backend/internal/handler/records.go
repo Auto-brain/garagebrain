@@ -63,3 +63,64 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(record)
 }
+
+// recordOwnerCar находит авто записи и проверяет, что оно принадлежит юзеру.
+func recordOwnerCar(w http.ResponseWriter, r *http.Request, recordID uuid.UUID) bool {
+	carID, err := db.GetRecordCarID(r.Context(), recordID)
+	if err != nil {
+		http.Error(w, `{"error":"record not found"}`, http.StatusNotFound)
+		return false
+	}
+	_, ok := authorizeCar(w, r, carID)
+	return ok
+}
+
+func UpdateRecord(w http.ResponseWriter, r *http.Request) {
+	recordID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid record id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !recordOwnerCar(w, r, recordID) {
+		return
+	}
+
+	var req model.UpdateRecordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Type == "" || req.Title == "" || req.Date == "" {
+		http.Error(w, `{"error":"type, title, and date required"}`, http.StatusBadRequest)
+		return
+	}
+
+	record, err := db.UpdateRecord(r.Context(), recordID, req)
+	if err != nil {
+		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(record)
+}
+
+func DeleteRecord(w http.ResponseWriter, r *http.Request) {
+	recordID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid record id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !recordOwnerCar(w, r, recordID) {
+		return
+	}
+
+	if err := db.DeleteRecord(r.Context(), recordID); err != nil {
+		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

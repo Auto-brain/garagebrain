@@ -63,6 +63,8 @@ func main() {
 			r.Post("/chat", handler.Chat)
 			r.Get("/cars/{id}/records", handler.ListRecords)
 			r.Post("/records", handler.CreateRecord)
+			r.Patch("/records/{id}", handler.UpdateRecord)
+			r.Delete("/records/{id}", handler.DeleteRecord)
 			r.Get("/cars/{id}/stats", handler.GetStats)
 			r.Get("/cars/{id}/passport", handler.GetPassport)
 			r.Get("/cars/{id}/reminders", handler.ListReminders)

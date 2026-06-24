@@ -35,6 +35,15 @@ type CreateRecordRequest struct {
 	Workshop    *string   `json:"workshop"`
 }
 
+type UpdateRecordRequest struct {
+	Type        string `json:"type"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Date        string `json:"date"`
+	Mileage     *int   `json:"mileage"`
+	Cost        *int   `json:"cost"`
+}
+
 type FuelRecord struct {
 	ID       uuid.UUID `json:"id"`
 	CarID    uuid.UUID `json:"car_id"`

@@ -100,6 +100,15 @@ export const api = {
   getRecords: (carId, type = '') =>
     request(`/cars/${carId}/records?type=${type}`),
 
+  updateRecord: (id, data) =>
+    request(`/records/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteRecord: (id) =>
+    request(`/records/${id}`, { method: 'DELETE' }),
+
   getStats: (carId) => request(`/cars/${carId}/stats`),
 
   getPassport: (carId) => {
