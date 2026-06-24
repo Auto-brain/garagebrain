@@ -1,5 +1,6 @@
 # Binaries
 apps/*/bin/
+apps/*/*/bin/
 *.exe
 *.exe~
 *.dll
