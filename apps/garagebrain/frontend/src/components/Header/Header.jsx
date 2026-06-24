@@ -4,6 +4,7 @@ import { api } from '../../lib/api.js';
 export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar }) {
   const [showCars, setShowCars] = useState(false);
   const [linking, setLinking] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const connectTelegram = async () => {
     setLinking(true);
@@ -22,6 +23,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
   };
 
   return (
+    <>
     <header className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -86,6 +88,13 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
           >
             {linking ? '…' : '✈️ Telegram'}
           </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            title="Настройки"
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            ⚙️
+          </button>
           <div className="text-sm text-gray-500">{user?.name || user?.email}</div>
           <button
             onClick={onLogout}
@@ -96,5 +105,80 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
         </div>
       </div>
     </header>
+    {showSettings && <SettingsModal user={user} onClose={() => setShowSettings(false)} />}
+    </>
+  );
+}
+
+const COUNTRIES = [
+  { code: '', label: '— не выбрано —' },
+  { code: 'BY', label: 'Беларусь' },
+  { code: 'RU', label: 'Россия' },
+  { code: 'UA', label: 'Украина' },
+  { code: 'KZ', label: 'Казахстан' },
+  { code: 'OTHER', label: 'Другая' },
+];
+
+function SettingsModal({ user, onClose }) {
+  const [name, setName] = useState(user?.name || '');
+  const [country, setCountry] = useState(user?.country || '');
+  const [region, setRegion] = useState(user?.region || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateProfile({ name, country, region });
+      onClose();
+    } catch (e) {
+      setError(e.message || 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold mb-4">Настройки</h2>
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+        <div className="space-y-4">
+          <label className="block">
+            <span className="text-sm text-gray-500">Имя</span>
+            <input
+              type="text" value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm text-gray-500">Страна</span>
+            <select
+              value={country} onChange={(e) => setCountry(e.target.value)}
+              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm text-gray-500">Регион / область</span>
+            <input
+              type="text" value={region} onChange={(e) => setRegion(e.target.value)}
+              placeholder="напр. Минская область"
+              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </label>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition">
+            Отмена
+          </button>
+          <button onClick={save} disabled={saving} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

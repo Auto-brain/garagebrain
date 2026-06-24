@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,
   password_hash TEXT,
   name TEXT,
+  country TEXT,
+  region TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

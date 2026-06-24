@@ -31,7 +31,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.CreateUser(r.Context(), req.Email, string(hash), req.Name)
+	user, err := db.CreateUser(r.Context(), req.Email, string(hash), req.Name, req.Country, req.Region)
 	if err != nil {
 		http.Error(w, `{"error":"user already exists or db error"}`, http.StatusConflict)
 		return
@@ -80,6 +80,26 @@ func Me(w http.ResponseWriter, r *http.Request) {
 	user, err := db.GetUserByID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, `{"error":"user not found"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+// UpdateProfile (auth) обновляет имя, страну и регион текущего пользователя.
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	var req model.UpdateProfileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+
+	user, err := db.UpdateProfile(r.Context(), userID, req.Name, req.Country, req.Region)
+	if err != nil {
+		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
 		return
 	}
 

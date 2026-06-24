@@ -69,6 +69,12 @@ export const api = {
 
   me: () => request('/auth/me'),
 
+  updateProfile: (data) =>
+    request('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   getCars: () => request('/cars'),
 
   createCar: (car) =>

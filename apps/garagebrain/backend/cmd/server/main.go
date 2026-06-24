@@ -55,6 +55,7 @@ func main() {
 			r.Use(middleware.Auth)
 
 			r.Get("/auth/me", handler.Me)
+			r.Patch("/auth/me", handler.UpdateProfile)
 			r.Get("/cars", handler.ListCars)
 			r.Post("/cars", handler.CreateCar)
 			r.Get("/cars/{id}", handler.GetCar)
