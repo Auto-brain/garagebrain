@@ -21,10 +21,13 @@ const defaultPrimaryModel = "anthropic/claude-haiku-4-5"
 // балансе запрос отклоняется с 402 (не хватает кредитов на бронь токенов).
 const defaultMaxTokens = 2000
 
+const openRouterChatURL = "https://openrouter.ai/api/v1/chat/completions"
+
 type ClaudeService struct {
 	apiKey       string
 	siteURL      string
 	primaryModel string
+	chatURL      string
 	httpClient   *http.Client
 	freeModels   *freeModelCache
 }
@@ -38,6 +41,7 @@ func NewClaudeService() *ClaudeService {
 		apiKey:       os.Getenv("OPENROUTER_API_KEY"),
 		siteURL:      os.Getenv("OPENROUTER_SITE_URL"),
 		primaryModel: model,
+		chatURL:      openRouterChatURL,
 		httpClient:   &http.Client{},
 		freeModels:   newFreeModelCache(),
 	}
@@ -114,7 +118,7 @@ func (s *ClaudeService) callModel(model string, messages []chatMessage) (string,
 		return "", 0, err
 	}
 
-	req, err := http.NewRequest("POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", s.chatURL, bytes.NewReader(body))
 	if err != nil {
 		return "", 0, err
 	}

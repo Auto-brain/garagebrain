@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
 // humanError превращает HTTP-статус/ответ в понятное пользователю сообщение.
-function humanError(status, data) {
+export function humanError(status, data) {
   if (data && data.error) {
     // Известные технические коды бэкенда → дружелюбный текст.
     const map = {
@@ -35,8 +35,9 @@ async function request(path, options = {}) {
   try {
     res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   } catch (e) {
-    // Сеть/CORS/таймаут — fetch отклоняется без ответа.
-    throw new Error('Нет связи с сервером. Проверьте подключение.');
+    // Сеть/CORS/таймаут — fetch отклоняется без ответа. Нейтральная
+    // формулировка: не просим клиента «проверять подключение».
+    throw new Error('Сервис временно недоступен. Попробуйте позже.');
   }
 
   // Тело может быть не-JSON (502 от прокси, пустой ответ и т.п.).
