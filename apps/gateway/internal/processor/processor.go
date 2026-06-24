@@ -7,6 +7,7 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -43,7 +44,7 @@ func (p *Processor) Process(ctx context.Context, in model.IncomingMessage) []mod
 		cmd, args := splitCommand(text)
 		switch cmd {
 		case "/start":
-			return p.handleStart(ctx, in, uid)
+			return p.handleStart(ctx, in, uid, args)
 		case "/help":
 			return p.handleHelp(in)
 		case "/status":
@@ -66,7 +67,12 @@ func (p *Processor) Process(ctx context.Context, in model.IncomingMessage) []mod
 	return p.handleFreeText(ctx, in, uid, text)
 }
 
-func (p *Processor) handleStart(ctx context.Context, in model.IncomingMessage, uid uuid.UUID) []model.OutgoingMessage {
+func (p *Processor) handleStart(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	// Deep-link связывания аккаунтов: /start link_<token> (Вариант A).
+	if len(args) > 0 && strings.HasPrefix(args[0], "link_") {
+		return p.handleAccountLink(ctx, in, strings.TrimPrefix(args[0], "link_"))
+	}
+
 	cars, _ := db.GetUserCars(ctx, uid)
 	if len(cars) == 0 {
 		return []model.OutgoingMessage{reply(in.ChatID,
@@ -75,6 +81,22 @@ func (p *Processor) handleStart(ctx context.Context, in model.IncomingMessage, u
 	return []model.OutgoingMessage{reply(in.ChatID,
 		fmt.Sprintf("👋 С возвращением!\n\nТекущий автомобиль: %s %s\nПробег: %d км\n\nНапишите о обслуживании — я сохраню запись.\n\n/help — все команды",
 			cars[0].Brand, cars[0].Model, cars[0].Mileage), "HTML")}
+}
+
+// handleAccountLink привязывает текущий Telegram к веб-аккаунту по одноразовому
+// токену из deep-link (и сливает данные, если у Telegram уже был свой аккаунт).
+func (p *Processor) handleAccountLink(ctx context.Context, in model.IncomingMessage, token string) []model.OutgoingMessage {
+	err := db.ConsumeLinkAndAttachTelegram(ctx, token, in.UserID, in.Username, in.DisplayName)
+	switch {
+	case errors.Is(err, db.ErrLinkTokenInvalid):
+		return []model.OutgoingMessage{reply(in.ChatID,
+			"⚠️ Ссылка для связывания устарела или уже использована. Сгенерируйте новую в веб-профиле.", "")}
+	case err != nil:
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось связать аккаунт. Попробуйте позже.", "")}
+	default:
+		return []model.OutgoingMessage{reply(in.ChatID,
+			"✅ Аккаунт связан с веб-профилем! Ваши автомобили и история теперь общие — заходите хоть с сайта, хоть из Telegram.", "")}
+	}
 }
 
 func (p *Processor) handleHelp(in model.IncomingMessage) []model.OutgoingMessage {

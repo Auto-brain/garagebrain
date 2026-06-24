@@ -85,6 +85,16 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Одноразовые токены для связывания веб-аккаунта с Telegram (deep-link).
+-- Вариант A: веб генерит токен → /start link_<token> в боте → привязка identity.
+CREATE TABLE IF NOT EXISTS account_link_tokens (
+  token TEXT PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS fuel_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   car_id UUID REFERENCES cars(id) ON DELETE CASCADE,

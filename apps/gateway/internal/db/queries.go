@@ -2,9 +2,89 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
+
+// ErrLinkTokenInvalid — токен не найден, уже использован или просрочен.
+var ErrLinkTokenInvalid = errors.New("link token invalid or expired")
+
+// ConsumeLinkAndAttachTelegram гасит одноразовый токен связывания и привязывает
+// Telegram-аккаунт (telegramID) к веб-пользователю, на которого выписан токен.
+// Если этот Telegram уже принадлежит отдельному (авто-созданному) аккаунту —
+// сливает его данные в веб-аккаунт (фундамент для переноса авто между юзерами).
+// Всё в одной транзакции.
+func ConsumeLinkAndAttachTelegram(ctx context.Context, token, telegramID, username, displayName string) error {
+	tx, err := Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// 1) Забираем и гасим токен (FOR UPDATE, проверка TTL и повторного использования).
+	var webUserID uuid.UUID
+	err = tx.QueryRow(ctx,
+		`UPDATE account_link_tokens
+		 SET used_at = now()
+		 WHERE token = $1 AND used_at IS NULL AND expires_at > now()
+		 RETURNING user_id`,
+		token,
+	).Scan(&webUserID)
+	if err != nil {
+		return ErrLinkTokenInvalid
+	}
+
+	// 2) Есть ли уже identity для этого Telegram?
+	var existingUserID uuid.UUID
+	err = tx.QueryRow(ctx,
+		`SELECT user_id FROM user_identities WHERE platform = 'telegram' AND platform_id = $1`,
+		telegramID,
+	).Scan(&existingUserID)
+
+	switch {
+	case err != nil:
+		// identity нет → просто привязываем Telegram к веб-аккаунту.
+		if _, err := tx.Exec(ctx,
+			`INSERT INTO user_identities (user_id, platform, platform_id, username, display_name)
+			 VALUES ($1, 'telegram', $2, $3, $4)`,
+			webUserID, telegramID, username, displayName,
+		); err != nil {
+			return err
+		}
+	case existingUserID == webUserID:
+		// Уже связаны — идемпотентно ничего не делаем.
+	default:
+		// Telegram принадлежит другому аккаунту → сливаем его в веб-аккаунт.
+		if err := mergeUsersTx(ctx, tx, existingUserID, webUserID); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+// mergeUsersTx переносит все данные пользователя fromID на toID и удаляет fromID.
+// service_records/fuel_records/reminders привязаны к cars (по car_id), поэтому
+// переноса cars достаточно — записи уезжают вместе с авто.
+func mergeUsersTx(ctx context.Context, tx pgx.Tx, fromID, toID uuid.UUID) error {
+	stmts := []string{
+		`UPDATE cars SET user_id = $2 WHERE user_id = $1`,
+		`UPDATE sessions SET user_id = $2 WHERE user_id = $1`,
+		`UPDATE push_subscriptions SET user_id = $2 WHERE user_id = $1`,
+		`UPDATE user_identities SET user_id = $2 WHERE user_id = $1`,
+	}
+	for _, s := range stmts {
+		if _, err := tx.Exec(ctx, s, fromID, toID); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM users WHERE id = $1`, fromID); err != nil {
+		return err
+	}
+	return nil
+}
 
 func GetUserByPlatformID(ctx context.Context, platform, platformID string) (uuid.UUID, error) {
 	var userID uuid.UUID

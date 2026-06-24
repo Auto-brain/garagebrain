@@ -1,7 +1,25 @@
 import { useState } from 'react';
+import { api } from '../../lib/api.js';
 
 export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar }) {
   const [showCars, setShowCars] = useState(false);
+  const [linking, setLinking] = useState(false);
+
+  const connectTelegram = async () => {
+    setLinking(true);
+    try {
+      const { deep_link: deepLink, token } = await api.linkTelegramStart();
+      if (deepLink) {
+        window.open(deepLink, '_blank');
+      } else {
+        alert('Откройте бота и отправьте: /start link_' + token);
+      }
+    } catch (e) {
+      alert(e.message || 'Не удалось создать ссылку для Telegram');
+    } finally {
+      setLinking(false);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3">
@@ -60,6 +78,14 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
               Пробег: <span className="font-medium text-gray-700">{selectedCar.mileage.toLocaleString()} км</span>
             </div>
           )}
+          <button
+            onClick={connectTelegram}
+            disabled={linking}
+            title="Связать аккаунт с Telegram"
+            className="text-sm px-3 py-1.5 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition disabled:opacity-50"
+          >
+            {linking ? '…' : '✈️ Telegram'}
+          </button>
           <div className="text-sm text-gray-500">{user?.name || user?.email}</div>
           <button
             onClick={onLogout}

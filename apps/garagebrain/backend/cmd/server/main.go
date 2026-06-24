@@ -70,6 +70,7 @@ func main() {
 			r.Get("/cars/{id}/fuel/stats", handler.GetFuelStats)
 			r.Post("/fuel", handler.CreateFuel)
 			r.Post("/upload", handler.UploadPhoto)
+			r.Post("/link/telegram/start", handler.StartTelegramLink)
 			r.Get("/push/vapid", handler.VapidKey)
 			r.Post("/push/subscribe", handler.SubscribePush)
 		})

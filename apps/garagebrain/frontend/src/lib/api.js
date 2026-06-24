@@ -134,6 +134,9 @@ export const api = {
 
   getVapidKey: () => request('/push/vapid'),
 
+  // Старт связывания с Telegram (Вариант A): возвращает { token, deep_link }.
+  linkTelegramStart: () => request('/link/telegram/start', { method: 'POST' }),
+
   subscribePush: (subscription) =>
     request('/push/subscribe', {
       method: 'POST',
