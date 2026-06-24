@@ -5,13 +5,18 @@ import HistoryItem from './HistoryItem.jsx';
 export default function HistorySidebar({ car, onSelectRecord }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (car) {
       setLoading(true);
+      setError('');
       api.getRecords(car.id)
-        .then(setRecords)
-        .catch(() => {})
+        .then((rs) => setRecords(rs || []))
+        .catch((e) => {
+          setRecords([]);
+          setError(e.message || 'Не удалось загрузить историю');
+        })
         .finally(() => setLoading(false));
     }
   }, [car?.id]);
@@ -26,7 +31,9 @@ export default function HistorySidebar({ car, onSelectRecord }) {
 
       {loading ? (
         <div className="p-4 text-center text-gray-500 text-sm">Загрузка...</div>
-      ) : records.length === 0 ? (
+      ) : error ? (
+        <div className="p-4 m-3 text-center text-red-600 bg-red-50 rounded-lg text-sm">{error}</div>
+      ) : (records || []).length === 0 ? (
         <div className="p-4 text-center text-gray-400 text-sm">
           Пока нет записей. Расскажите о обслуживании в чате.
         </div>

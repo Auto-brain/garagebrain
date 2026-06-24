@@ -39,7 +39,7 @@ func GetFuelRecordsByCar(ctx context.Context, carID uuid.UUID) ([]model.FuelReco
 	}
 	defer rows.Close()
 
-	var records []model.FuelRecord
+	records := []model.FuelRecord{}
 	for rows.Next() {
 		var f model.FuelRecord
 		if err := rows.Scan(&f.ID, &f.CarID, &f.Date, &f.Mileage, &f.Liters, &f.Cost,

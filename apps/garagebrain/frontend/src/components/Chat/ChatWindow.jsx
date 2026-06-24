@@ -35,8 +35,8 @@ export default function ChatWindow({ car, onAddCar }) {
     if (car) {
       setMessages([]);
       api.getReminders(car.id)
-        .then(setReminders)
-        .catch(() => {});
+        .then((rs) => setReminders(rs || []))
+        .catch(() => setReminders([]));
 
       setMessages([{
         role: 'assistant',
@@ -78,7 +78,7 @@ export default function ChatWindow({ car, onAddCar }) {
     } catch (err) {
       setMessages((prev) => [...prev, {
         role: 'assistant',
-        content: 'Произошла ошибка. Попробуйте ещё раз.',
+        content: `⚠️ ${err.message || 'Не удалось обработать сообщение. Попробуйте ещё раз.'}`,
       }]);
     } finally {
       setLoading(false);
@@ -108,7 +108,7 @@ export default function ChatWindow({ car, onAddCar }) {
     );
   }
 
-  const dueReminders = reminders.filter((r) => {
+  const dueReminders = (reminders || []).filter((r) => {
     if (r.type === 'date' && r.trigger_date) {
       return new Date(r.trigger_date) <= new Date();
     }

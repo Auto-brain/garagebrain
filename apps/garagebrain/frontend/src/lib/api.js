@@ -1,5 +1,28 @@
 const API_BASE = '/api';
 
+// humanError превращает HTTP-статус/ответ в понятное пользователю сообщение.
+function humanError(status, data) {
+  if (data && data.error) {
+    // Известные технические коды бэкенда → дружелюбный текст.
+    const map = {
+      'ai error': 'ИИ-сервис временно недоступен. Попробуйте позже.',
+      'db error': 'Ошибка базы данных. Попробуйте позже.',
+      'server misconfigured': 'Сервер настроен неверно (JWT). Обратитесь к администратору.',
+    };
+    return map[data.error] || data.error;
+  }
+  switch (status) {
+    case 401: return 'Сессия истекла или неверный вход. Войдите заново.';
+    case 403: return 'Нет доступа к этому ресурсу.';
+    case 404: return 'Не найдено.';
+    case 500: return 'Внутренняя ошибка сервера. Попробуйте позже.';
+    case 502:
+    case 503:
+    case 504: return 'Сервер недоступен. Попробуйте позже.';
+    default: return `Ошибка запроса (${status})`;
+  }
+}
+
 async function request(path, options = {}) {
   const token = localStorage.getItem('token');
   const headers = {
@@ -8,11 +31,23 @@ async function request(path, options = {}) {
     ...options.headers,
   };
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (e) {
+    // Сеть/CORS/таймаут — fetch отклоняется без ответа.
+    throw new Error('Нет связи с сервером. Проверьте подключение.');
+  }
+
+  // Тело может быть не-JSON (502 от прокси, пустой ответ и т.п.).
+  let data = null;
+  const text = await res.text();
+  if (text) {
+    try { data = JSON.parse(text); } catch { /* оставляем data = null */ }
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || 'Request failed');
+    throw new Error(humanError(res.status, data));
   }
 
   return data;

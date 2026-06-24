@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/auto-brain/garagebrain/internal/model"
 	"github.com/google/uuid"
@@ -33,7 +34,9 @@ func GetRecordsByCar(ctx context.Context, carID uuid.UUID, recType string, limit
 		query += " AND type = $2"
 		args = append(args, recType)
 	}
-	query += " ORDER BY date DESC LIMIT $3"
+	// Плейсхолдер LIMIT зависит от того, добавили ли мы фильтр по типу
+	// (иначе при пустом type ссылка на $3 указывает на несуществующий параметр).
+	query += fmt.Sprintf(" ORDER BY date DESC LIMIT $%d", len(args)+1)
 	args = append(args, limit)
 
 	rows, err := Pool.Query(ctx, query, args...)
@@ -42,7 +45,7 @@ func GetRecordsByCar(ctx context.Context, carID uuid.UUID, recType string, limit
 	}
 	defer rows.Close()
 
-	var records []model.ServiceRecord
+	records := []model.ServiceRecord{}
 	for rows.Next() {
 		var r model.ServiceRecord
 		err := rows.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
@@ -94,7 +97,7 @@ func GetExpensesByCar(ctx context.Context, carID uuid.UUID) ([]model.ServiceReco
 	}
 	defer rows.Close()
 
-	var records []model.ServiceRecord
+	records := []model.ServiceRecord{}
 	for rows.Next() {
 		var r model.ServiceRecord
 		err := rows.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,

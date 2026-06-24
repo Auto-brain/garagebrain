@@ -55,7 +55,7 @@ func GetRemindersByCar(ctx context.Context, carID uuid.UUID) ([]model.Reminder, 
 	}
 	defer rows.Close()
 
-	var reminders []model.Reminder
+	reminders := []model.Reminder{}
 	for rows.Next() {
 		var r model.Reminder
 		err := rows.Scan(&r.ID, &r.CarID, &r.Title, &r.Type, &r.TriggerMileage, &r.TriggerDate, &r.IntervalKm,
