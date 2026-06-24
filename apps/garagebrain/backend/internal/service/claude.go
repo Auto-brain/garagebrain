@@ -11,9 +11,10 @@ import (
 	"os"
 )
 
-// primaryModel — основная (платная) модель. При нехватке баланса (402) сервис
-// автоматически переключается на бесплатные модели (см. freeModelCache).
-const primaryModel = "anthropic/claude-haiku-4-5"
+// defaultPrimaryModel — основная (платная) модель по умолчанию. Переопределяется
+// переменной CLAUDE_MODEL (напр. на бесплатную модель на время тестирования).
+// При нехватке баланса (402) сервис всё равно уходит в фолбэк (см. freeModelCache).
+const defaultPrimaryModel = "anthropic/claude-haiku-4-5"
 
 // defaultMaxTokens ограничивает ответ модели. Без него OpenRouter резервирует
 // максимум модели (у claude-haiku-4-5 — 64000), из-за чего на бесплатном/малом
@@ -21,18 +22,24 @@ const primaryModel = "anthropic/claude-haiku-4-5"
 const defaultMaxTokens = 2000
 
 type ClaudeService struct {
-	apiKey     string
-	siteURL    string
-	httpClient *http.Client
-	freeModels *freeModelCache
+	apiKey       string
+	siteURL      string
+	primaryModel string
+	httpClient   *http.Client
+	freeModels   *freeModelCache
 }
 
 func NewClaudeService() *ClaudeService {
+	model := os.Getenv("CLAUDE_MODEL")
+	if model == "" {
+		model = defaultPrimaryModel
+	}
 	return &ClaudeService{
-		apiKey:     os.Getenv("OPENROUTER_API_KEY"),
-		siteURL:    os.Getenv("OPENROUTER_SITE_URL"),
-		httpClient: &http.Client{},
-		freeModels: newFreeModelCache(),
+		apiKey:       os.Getenv("OPENROUTER_API_KEY"),
+		siteURL:      os.Getenv("OPENROUTER_SITE_URL"),
+		primaryModel: model,
+		httpClient:   &http.Client{},
+		freeModels:   newFreeModelCache(),
 	}
 }
 
@@ -65,7 +72,7 @@ func (s *ClaudeService) Chat(systemPrompt string, userMessage string, conversati
 	messages = append(messages, chatMessage{Role: "user", Content: userMessage})
 
 	// 1) Основная модель.
-	content, status, err := s.callModel(primaryModel, messages)
+	content, status, err := s.callModel(s.primaryModel, messages)
 	if err == nil {
 		return content, nil
 	}
@@ -74,11 +81,11 @@ func (s *ClaudeService) Chat(systemPrompt string, userMessage string, conversati
 	if status != http.StatusPaymentRequired {
 		return "", err
 	}
-	log.Printf("claude: основная модель %s недоступна по балансу (402), переключаюсь на бесплатные", primaryModel)
+	log.Printf("claude: основная модель %s недоступна по балансу (402), переключаюсь на бесплатные", s.primaryModel)
 
 	// 2) Бесплатные модели по рангу, затем openrouter/free.
 	for _, m := range s.freeModels.list(context.Background()) {
-		if m == primaryModel {
+		if m == s.primaryModel {
 			continue
 		}
 		content, status, err = s.callModel(m, messages)
