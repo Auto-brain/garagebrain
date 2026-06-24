@@ -28,9 +28,15 @@ type chatMessage struct {
 	Content string `json:"content"`
 }
 
+// defaultMaxTokens ограничивает ответ модели. Без него OpenRouter резервирует
+// максимум модели (у claude-haiku-4-5 — 64000), из-за чего на бесплатном/малом
+// балансе запрос отклоняется с 402 (не хватает кредитов на бронь токенов).
+const defaultMaxTokens = 2000
+
 type chatRequest struct {
-	Model    string        `json:"model"`
-	Messages []chatMessage `json:"messages"`
+	Model     string        `json:"model"`
+	Messages  []chatMessage `json:"messages"`
+	MaxTokens int           `json:"max_tokens,omitempty"`
 }
 
 type chatResponse struct {
@@ -53,8 +59,9 @@ func (s *ClaudeService) Chat(systemPrompt string, userMessage string, conversati
 	messages = append(messages, chatMessage{Role: "user", Content: userMessage})
 
 	reqBody := chatRequest{
-		Model:    "anthropic/claude-haiku-4-5",
-		Messages: messages,
+		Model:     "anthropic/claude-haiku-4-5",
+		Messages:  messages,
+		MaxTokens: defaultMaxTokens,
 	}
 
 	body, err := json.Marshal(reqBody)
