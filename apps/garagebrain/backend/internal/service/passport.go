@@ -16,10 +16,13 @@ func GeneratePassport(car model.Car, records []model.ServiceRecord) ([]byte, err
 		return nil, fmt.Errorf("parse template: %w", err)
 	}
 
-	totalCost := 0
+	totalCost := 0.0
 	for _, r := range records {
 		if r.Cost != nil {
 			totalCost += *r.Cost
+		}
+		if r.PartsCost != nil {
+			totalCost += *r.PartsCost
 		}
 	}
 

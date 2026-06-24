@@ -10,10 +10,10 @@ import (
 )
 
 type StatsResponse struct {
-	TotalCost     int            `json:"total_cost"`
-	RecordsByType map[string]int `json:"records_by_type"`
-	MonthlyCosts  map[string]int `json:"monthly_costs"`
-	RecordCount   int            `json:"record_count"`
+	TotalCost     float64            `json:"total_cost"`
+	RecordsByType map[string]float64 `json:"records_by_type"`
+	MonthlyCosts  map[string]float64 `json:"monthly_costs"`
+	RecordCount   int                `json:"record_count"`
 }
 
 func GetStats(w http.ResponseWriter, r *http.Request) {
@@ -35,13 +35,13 @@ func GetStats(w http.ResponseWriter, r *http.Request) {
 
 	stats := StatsResponse{
 		TotalCost:     0,
-		RecordsByType: make(map[string]int),
-		MonthlyCosts:  make(map[string]int),
+		RecordsByType: make(map[string]float64),
+		MonthlyCosts:  make(map[string]float64),
 		RecordCount:   len(records),
 	}
 
 	for _, r := range records {
-		amount := 0
+		amount := 0.0
 		if r.Cost != nil {
 			amount += *r.Cost
 		}

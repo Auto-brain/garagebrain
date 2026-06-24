@@ -15,8 +15,8 @@ type ServiceRecord struct {
 	Description   string          `json:"description,omitempty"`
 	Date          time.Time       `json:"date"`
 	Mileage       *int            `json:"mileage"`
-	Cost          *int            `json:"cost"`
-	PartsCost     *int            `json:"parts_cost"`
+	Cost          *float64        `json:"cost"`
+	PartsCost     *float64        `json:"parts_cost"`
 	Currency      string          `json:"currency"`
 	PartsCurrency string          `json:"parts_currency"`
 	Parts         json.RawMessage `json:"parts"`
@@ -33,8 +33,8 @@ type CreateRecordRequest struct {
 	Description   string          `json:"description,omitempty"`
 	Date          string          `json:"date"`
 	Mileage       *int            `json:"mileage"`
-	Cost          *int            `json:"cost"`
-	PartsCost     *int            `json:"parts_cost"`
+	Cost          *float64        `json:"cost"`
+	PartsCost     *float64        `json:"parts_cost"`
 	Currency      string          `json:"currency"`
 	PartsCurrency string          `json:"parts_currency"`
 	Parts         json.RawMessage `json:"parts"`
@@ -42,15 +42,15 @@ type CreateRecordRequest struct {
 }
 
 type UpdateRecordRequest struct {
-	Type          string `json:"type"`
-	Title         string `json:"title"`
-	Description   string `json:"description,omitempty"`
-	Date          string `json:"date"`
-	Mileage       *int   `json:"mileage"`
-	Cost          *int   `json:"cost"`
-	PartsCost     *int   `json:"parts_cost"`
-	Currency      string `json:"currency"`
-	PartsCurrency string `json:"parts_currency"`
+	Type          string   `json:"type"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Date          string   `json:"date"`
+	Mileage       *int     `json:"mileage"`
+	Cost          *float64 `json:"cost"`
+	PartsCost     *float64 `json:"parts_cost"`
+	Currency      string   `json:"currency"`
+	PartsCurrency string   `json:"parts_currency"`
 }
 
 type FuelRecord struct {

@@ -36,7 +36,7 @@ func BuildSystemPrompt(car *model.Car, records []model.ServiceRecord, reminders 
 			r := records[i]
 			prompt += fmt.Sprintf("  - [%s] %s | %s", r.Date.Format("02.01.2006"), r.Type, r.Title)
 			if r.Cost != nil {
-				prompt += fmt.Sprintf(" | %d₽", *r.Cost)
+				prompt += fmt.Sprintf(" | %.2f", *r.Cost)
 			}
 			prompt += "\n"
 		}

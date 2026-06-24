@@ -17,14 +17,17 @@ func BuildPassportPrompt(car model.Car, records []model.ServiceRecord) string {
 	if len(records) > 0 {
 		prompt += fmt.Sprintf(" Всего записей обслуживания: %d.", len(records))
 
-		totalCost := 0
+		totalCost := 0.0
 		for _, r := range records {
 			if r.Cost != nil {
 				totalCost += *r.Cost
 			}
+			if r.PartsCost != nil {
+				totalCost += *r.PartsCost
+			}
 		}
 		if totalCost > 0 {
-			prompt += fmt.Sprintf(" Общие затраты на обслуживание: %d ₽.", totalCost)
+			prompt += fmt.Sprintf(" Общие затраты на обслуживание: %.2f.", totalCost)
 		}
 	}
 

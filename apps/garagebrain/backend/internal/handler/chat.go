@@ -110,8 +110,18 @@ func createRecordFromParsed(carID uuid.UUID, rec *service.ParsedRecord) model.Cr
 		Title:   rec.Title,
 		Date:    rec.Date.Format("2006-01-02"),
 		Mileage: rec.Mileage,
-		Cost:    rec.Cost,
+		Cost:    intToFloatPtr(rec.Cost),
 	}
+}
+
+// intToFloatPtr конвертирует *int (парсер извлекает целые суммы из текста)
+// в *float64 для NUMERIC-полей стоимости.
+func intToFloatPtr(p *int) *float64 {
+	if p == nil {
+		return nil
+	}
+	f := float64(*p)
+	return &f
 }
 
 // createReminderFromNextAction разбирает поле «Следующее: …» и заводит
