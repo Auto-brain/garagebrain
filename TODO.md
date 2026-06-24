@@ -83,3 +83,61 @@
 > Связь между пунктами: и валюта, и разбивка работа/материалы касаются полей
 > стоимости — желательно проектировать их вместе (одна миграция схемы и один
 > заход в парсер/промпт/карточку записи).
+
+---
+
+## 3. Связывание аккаунтов: Telegram ↔ веб (в обе стороны)
+
+**Суть:** аккаунт, созданный на фронте (email/пароль), и аккаунт в Telegram —
+сейчас это **разные** записи `users`. Нужно дать возможность связать их, чтобы
+авто/записи были общими, независимо от того, откуда зашёл пользователь.
+Связывание должно быть **простым в обоих направлениях**.
+
+> Контекст: связь хранится в `user_identities (user_id, platform, platform_id)`.
+> Веб-пользователь — это `users` с `email/password_hash`; Telegram-пользователь
+> создаётся в `GetOrCreateUser` отдельной строкой `users` + identity. Связать =
+> привязать Telegram-identity к веб-`user_id` (и при необходимости **слить**
+> данные двух аккаунтов: перенести `cars`/записи на один `user_id`).
+
+### Вариант A. Веб → Telegram (через deep-link, самый простой)
+- [ ] На фронте у залогиненного пользователя кнопка **«Подключить Telegram»**.
+- [ ] Backend генерирует одноразовый **`link_token`** (короткий TTL, ~10 мин,
+  привязан к `user_id`) и отдаёт **deep-link**:
+  `https://t.me/<bot_username>?start=link_<token>`.
+- [ ] Пользователь жмёт ссылку → Telegram открывает бота и шлёт
+  `/start link_<token>`.
+- [ ] Бот (gateway) передаёт токен в backend → backend гасит токен и
+  **привязывает** Telegram `platform_id` к этому веб-`user_id`.
+- [ ] Если у Telegram-пользователя уже был свой аккаунт с авто — **слить**
+  (перенести его `cars`/записи на веб-`user_id`, удалить дубль).
+
+### Вариант B. Telegram → веб (через одноразовый код)
+- [ ] В боте команда **`/link`** → бот показывает **6-значный код** (TTL ~10 мин,
+  привязан к Telegram-identity).
+- [ ] На фронте в профиле поле **«Привязать Telegram»** → пользователь вводит код.
+- [ ] Backend сверяет код → привязывает Telegram-identity к веб-`user_id` (+ слияние
+  данных, как выше).
+
+### Общая механика (одна на оба варианта)
+- [ ] Таблица `account_link_tokens (token, user_id|telegram_id, kind, expires_at, used_at)`
+  — одноразовые токены/коды с TTL.
+- [ ] Эндпоинты backend:
+  - `POST /api/link/telegram/start` → создать `link_token`, вернуть deep-link (Вариант A);
+  - `POST /api/link/telegram/code` → создать 6-значный код для текущего веб-юзера? нет —
+    код генерит бот; на вебе `POST /api/link/telegram/confirm {code}` (Вариант B);
+  - consume-эндпоинт для gateway: `POST /api/link/consume {token|code, telegram_id, chat_id}`.
+- [ ] **Слияние аккаунтов** (`mergeUsers(fromID, toID)`): перенести `cars`,
+  `service_records`, `fuel_records`, `reminders`, `user_identities`,
+  `push_subscriptions` на целевой `user_id`; удалить исходный. Делать в транзакции.
+- [ ] Идемпотентность и защита: токен одноразовый, с TTL; нельзя привязать чужой
+  Telegram, если он уже привязан к другому аккаунту (показать понятную ошибку).
+
+### Где править (ориентир)
+- `shared/db/garagebrain_schema.sql` — таблица `account_link_tokens`.
+- backend: `internal/handler/link.go`, `internal/db/link.go` (+ `mergeUsers`).
+- gateway: `internal/processor/processor.go` — обработка `/start link_<token>`
+  и команды `/link`; вызовы backend через `internal/backend/client.go`.
+- Frontend: блок «Подключить Telegram» в профиле (кнопка deep-link + поле кода).
+
+> Рекомендация: начать с **Варианта A** (deep-link `?start=`) — он самый простой
+> для пользователя (один тап) и почти не требует UI; Вариант B добавить следом.
