@@ -31,7 +31,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.CreateUser(r.Context(), req.Email, string(hash), req.Name, req.Country, req.Region)
+	user, err := db.CreateUser(r.Context(), req.Email, string(hash), req.Name, req.Country, req.Region, req.Currency)
 	if err != nil {
 		http.Error(w, `{"error":"user already exists or db error"}`, http.StatusConflict)
 		return
@@ -97,7 +97,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.UpdateProfile(r.Context(), userID, req.Name, req.Country, req.Region)
+	user, err := db.UpdateProfile(r.Context(), userID, req.Name, req.Country, req.Region, req.Currency)
 	if err != nil {
 		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
 		return

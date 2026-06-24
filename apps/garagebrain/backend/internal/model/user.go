@@ -13,6 +13,7 @@ type User struct {
 	Name         string    `json:"name"`
 	Country      string    `json:"country"`
 	Region       string    `json:"region"`
+	Currency     string    `json:"currency"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -22,12 +23,14 @@ type RegisterRequest struct {
 	Name     string `json:"name"`
 	Country  string `json:"country"`
 	Region   string `json:"region"`
+	Currency string `json:"currency"`
 }
 
 type UpdateProfileRequest struct {
-	Name    string `json:"name"`
-	Country string `json:"country"`
-	Region  string `json:"region"`
+	Name     string `json:"name"`
+	Country  string `json:"country"`
+	Region   string `json:"region"`
+	Currency string `json:"currency"`
 }
 
 type LoginRequest struct {

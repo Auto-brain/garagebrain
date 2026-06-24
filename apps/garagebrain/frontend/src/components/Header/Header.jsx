@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../lib/api.js';
 
-export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar }) {
+export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate }) {
   const [showCars, setShowCars] = useState(false);
   const [linking, setLinking] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -105,7 +105,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
         </div>
       </div>
     </header>
-    {showSettings && <SettingsModal user={user} onClose={() => setShowSettings(false)} />}
+    {showSettings && <SettingsModal user={user} onClose={() => setShowSettings(false)} onUserUpdate={onUserUpdate} />}
     </>
   );
 }
@@ -119,18 +119,31 @@ const COUNTRIES = [
   { code: 'OTHER', label: 'Другая' },
 ];
 
-function SettingsModal({ user, onClose }) {
+const CURRENCIES = ['USD', 'EUR', 'BYN', 'RUB', 'UAH', 'KZT'];
+
+// Валюта по умолчанию для страны — подставляется при выборе страны.
+const COUNTRY_CURRENCY = { BY: 'BYN', RU: 'RUB', UA: 'UAH', KZ: 'KZT' };
+
+function SettingsModal({ user, onClose, onUserUpdate }) {
   const [name, setName] = useState(user?.name || '');
   const [country, setCountry] = useState(user?.country || '');
   const [region, setRegion] = useState(user?.region || '');
+  const [currency, setCurrency] = useState(user?.currency || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const handleCountryChange = (code) => {
+    setCountry(code);
+    // Подставляем валюту страны (с возможностью изменить вручную).
+    if (COUNTRY_CURRENCY[code]) setCurrency(COUNTRY_CURRENCY[code]);
+  };
 
   const save = async () => {
     setSaving(true);
     setError('');
     try {
-      await api.updateProfile({ name, country, region });
+      const updated = await api.updateProfile({ name, country, region, currency });
+      if (onUserUpdate) onUserUpdate(updated);
       onClose();
     } catch (e) {
       setError(e.message || 'Не удалось сохранить');
@@ -155,7 +168,7 @@ function SettingsModal({ user, onClose }) {
           <label className="block">
             <span className="text-sm text-gray-500">Страна</span>
             <select
-              value={country} onChange={(e) => setCountry(e.target.value)}
+              value={country} onChange={(e) => handleCountryChange(e.target.value)}
               className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
@@ -168,6 +181,16 @@ function SettingsModal({ user, onClose }) {
               placeholder="напр. Минская область"
               className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </label>
+          <label className="block">
+            <span className="text-sm text-gray-500">Валюта по умолчанию</span>
+            <select
+              value={currency} onChange={(e) => setCurrency(e.target.value)}
+              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">— не выбрано —</option>
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </label>
         </div>
         <div className="flex gap-3 mt-6">

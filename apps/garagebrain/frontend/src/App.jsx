@@ -89,6 +89,7 @@ export default function App() {
         onSelectCar={setSelectedCar}
         onLogout={handleLogout}
         onAddCar={() => setView('addcar')}
+        onUserUpdate={setUser}
       />
       {selectedCar && <StatusBar car={selectedCar} />}
 
