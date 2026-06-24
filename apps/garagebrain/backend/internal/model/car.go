@@ -41,3 +41,14 @@ type CreateCarRequest struct {
 type UpdateMileageRequest struct {
 	Mileage int `json:"mileage"`
 }
+
+type UpdateCarRequest struct {
+	Brand   string  `json:"brand"`
+	Model   string  `json:"model"`
+	Year    *int    `json:"year"`
+	Mileage int     `json:"mileage"`
+	VIN     *string `json:"vin"`
+	Color   *string `json:"color"`
+	Engine  *string `json:"engine"`
+	Drive   *string `json:"drive"`
+}

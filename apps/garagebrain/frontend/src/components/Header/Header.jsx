@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { api } from '../../lib/api.js';
 
-export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate }) {
+export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate, onCarUpdate }) {
   const [showCars, setShowCars] = useState(false);
   const [linking, setLinking] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [editCar, setEditCar] = useState(false);
 
   const connectTelegram = async () => {
     setLinking(true);
@@ -60,6 +61,12 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
                     </button>
                   ))}
                   <button
+                    onClick={() => { setShowCars(false); setEditCar(true); }}
+                    className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50 border-t border-gray-100"
+                  >
+                    ✏️ Изменить текущее
+                  </button>
+                  <button
                     onClick={() => {
                       setShowCars(false);
                       onAddCar();
@@ -106,7 +113,80 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
       </div>
     </header>
     {showSettings && <SettingsModal user={user} onClose={() => setShowSettings(false)} onUserUpdate={onUserUpdate} />}
+    {editCar && selectedCar && (
+      <EditCarModal
+        car={selectedCar}
+        onClose={() => setEditCar(false)}
+        onSaved={(c) => { if (onCarUpdate) onCarUpdate(c); setEditCar(false); }}
+      />
+    )}
     </>
+  );
+}
+
+function EditCarModal({ car, onClose, onSaved }) {
+  const [brand, setBrand] = useState(car.brand || '');
+  const [model, setModel] = useState(car.model || '');
+  const [year, setYear] = useState(car.year ?? '');
+  const [mileage, setMileage] = useState(car.mileage ?? '');
+  const [engine, setEngine] = useState(car.engine || '');
+  const [vin, setVin] = useState(car.vin || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async () => {
+    if (!brand || !model) { setError('Марка и модель обязательны'); return; }
+    setBusy(true);
+    setError('');
+    try {
+      const updated = await api.updateCar(car.id, {
+        brand,
+        model,
+        year: year === '' ? null : parseInt(year, 10),
+        mileage: mileage === '' ? 0 : parseInt(mileage, 10),
+        engine: engine || null,
+        vin: vin || null,
+      });
+      onSaved(updated);
+    } catch (e) {
+      setError(e.message || 'Не удалось сохранить');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold mb-4">Изменить автомобиль</h2>
+        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+        <div className="space-y-3">
+          <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Марка"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Модель"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="flex gap-3">
+            <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Год"
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <input type="text" value={engine} onChange={(e) => setEngine(e.target.value)} placeholder="Двигатель (напр. 1.6)"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} placeholder="VIN"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} disabled={busy}
+            className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50">
+            Отмена
+          </button>
+          <button onClick={save} disabled={busy}
+            className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
+            {busy ? '…' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

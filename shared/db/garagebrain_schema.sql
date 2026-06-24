@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS service_records (
   date DATE NOT NULL,
   mileage INT,
   cost INT,
+  parts_cost INT,
+  currency TEXT,
   parts JSONB DEFAULT '[]',
   workshop TEXT,
   photos TEXT[],

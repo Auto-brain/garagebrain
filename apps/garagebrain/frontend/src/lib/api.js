@@ -85,6 +85,12 @@ export const api = {
 
   getCar: (id) => request(`/cars/${id}`),
 
+  updateCar: (id, data) =>
+    request(`/cars/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   updateMileage: (id, mileage) =>
     request(`/cars/${id}/mileage`, {
       method: 'PATCH',

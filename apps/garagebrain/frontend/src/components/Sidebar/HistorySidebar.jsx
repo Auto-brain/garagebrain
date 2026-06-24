@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../lib/api.js';
 import HistoryItem from './HistoryItem.jsx';
 
-export default function HistorySidebar({ car }) {
+export default function HistorySidebar({ car, currency }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +42,7 @@ export default function HistorySidebar({ car }) {
       ) : (
         <div className="divide-y divide-gray-100">
           {records.map((record) => (
-            <HistoryItem key={record.id} record={record} onClick={() => setEditing(record)} />
+            <HistoryItem key={record.id} record={record} currency={currency} onClick={() => setEditing(record)} />
           ))}
         </div>
       )}
@@ -50,6 +50,7 @@ export default function HistorySidebar({ car }) {
       {editing && (
         <EditRecordModal
           record={editing}
+          defaultCurrency={currency}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
@@ -65,12 +66,16 @@ const TYPES = [
   { value: 'other', label: 'Прочее' },
 ];
 
-function EditRecordModal({ record, onClose, onSaved }) {
+const CURRENCIES = ['USD', 'EUR', 'BYN', 'RUB', 'UAH', 'KZT'];
+
+function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
   const [type, setType] = useState(record.type || 'service');
   const [title, setTitle] = useState(record.title || '');
   const [date, setDate] = useState((record.date || '').slice(0, 10));
   const [mileage, setMileage] = useState(record.mileage ?? '');
   const [cost, setCost] = useState(record.cost ?? '');
+  const [partsCost, setPartsCost] = useState(record.parts_cost ?? '');
+  const [currency, setCurrency] = useState(record.currency || defaultCurrency || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -85,6 +90,8 @@ function EditRecordModal({ record, onClose, onSaved }) {
         date,
         mileage: mileage === '' ? null : parseInt(mileage, 10),
         cost: cost === '' ? null : parseInt(cost, 10),
+        parts_cost: partsCost === '' ? null : parseInt(partsCost, 10),
+        currency,
       });
       onSaved();
     } catch (e) {
@@ -122,8 +129,17 @@ function EditRecordModal({ record, onClose, onSaved }) {
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="Стоимость"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="flex gap-3">
+            <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="Стоимость работ"
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="number" value={partsCost} onChange={(e) => setPartsCost(e.target.value)} placeholder="Материалы"
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Валюта по умолчанию</option>
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={remove} disabled={busy}

@@ -41,12 +41,20 @@ func GetStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, r := range records {
+		amount := 0
 		if r.Cost != nil {
-			stats.TotalCost += *r.Cost
-			stats.RecordsByType[r.Type] += *r.Cost
-			month := r.Date.Format("2006-01")
-			stats.MonthlyCosts[month] += *r.Cost
+			amount += *r.Cost
 		}
+		if r.PartsCost != nil {
+			amount += *r.PartsCost
+		}
+		if amount == 0 {
+			continue
+		}
+		stats.TotalCost += amount
+		stats.RecordsByType[r.Type] += amount
+		month := r.Date.Format("2006-01")
+		stats.MonthlyCosts[month] += amount
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -59,6 +59,7 @@ func main() {
 			r.Get("/cars", handler.ListCars)
 			r.Post("/cars", handler.CreateCar)
 			r.Get("/cars/{id}", handler.GetCar)
+			r.Patch("/cars/{id}", handler.UpdateCar)
 			r.Patch("/cars/{id}/mileage", handler.UpdateMileage)
 			r.Post("/chat", handler.Chat)
 			r.Get("/cars/{id}/records", handler.ListRecords)

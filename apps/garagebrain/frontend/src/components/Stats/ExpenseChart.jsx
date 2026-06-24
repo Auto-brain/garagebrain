@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from 'recharts';
 import { api } from '../../lib/api.js';
+import { formatMoney } from '../../lib/money.js';
 
 const TYPE_LABELS = {
   service: 'ТО',
@@ -17,7 +18,7 @@ const TYPE_COLORS = {
   other: '#9ca3af',
 };
 
-export default function ExpenseChart({ car }) {
+export default function ExpenseChart({ car, currency }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +49,7 @@ export default function ExpenseChart({ car }) {
         <div className="flex items-baseline justify-between mb-4">
           <h3 className="font-semibold text-gray-800">Расходы по месяцам</h3>
           <span className="text-sm text-gray-500">
-            Всего: <span className="font-semibold text-gray-800">{stats.total_cost.toLocaleString()} ₽</span>
+            Всего: <span className="font-semibold text-gray-800">{formatMoney(stats.total_cost, null, currency)}</span>
           </span>
         </div>
         <ResponsiveContainer width="100%" height={220}>
@@ -56,7 +57,7 @@ export default function ExpenseChart({ car }) {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="month" fontSize={12} />
             <YAxis fontSize={12} width={50} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} ₽`} />
+            <Tooltip formatter={(v) => formatMoney(v, null, currency)} />
             <Bar dataKey="cost" fill="#2563eb" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -69,7 +70,7 @@ export default function ExpenseChart({ car }) {
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" fontSize={12} />
             <YAxis type="category" dataKey="label" fontSize={12} width={70} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} ₽`} />
+            <Tooltip formatter={(v) => formatMoney(v, null, currency)} />
             <Bar dataKey="cost" radius={[0, 4, 4, 0]}>
               {byType.map((e) => (
                 <Cell key={e.type} fill={TYPE_COLORS[e.type] || '#9ca3af'} />

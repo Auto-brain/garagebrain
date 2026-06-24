@@ -8,15 +8,27 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateRecord(ctx context.Context, req model.CreateRecordRequest) (*model.ServiceRecord, error) {
+// recordCols / scanRecord — единый список колонок и разбор строки записи,
+// чтобы не дублировать порядок полей по нескольким запросам.
+const recordCols = "id, car_id, type, title, description, date, mileage, cost, parts_cost, COALESCE(currency,''), parts, workshop, photos, raw_input, created_at"
+
+func scanRecord(row interface {
+	Scan(dest ...any) error
+}) (model.ServiceRecord, error) {
 	var r model.ServiceRecord
-	err := Pool.QueryRow(ctx,
-		`INSERT INTO service_records (car_id, type, title, description, date, mileage, cost, parts, workshop)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-		 RETURNING id, car_id, type, title, description, date, mileage, cost, parts, workshop, photos, raw_input, created_at`,
-		req.CarID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.Parts, req.Workshop,
-	).Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost, &r.Parts,
-		&r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+	err := row.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
+		&r.PartsCost, &r.Currency, &r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+	return r, err
+}
+
+func CreateRecord(ctx context.Context, req model.CreateRecordRequest) (*model.ServiceRecord, error) {
+	r, err := scanRecord(Pool.QueryRow(ctx,
+		`INSERT INTO service_records (car_id, type, title, description, date, mileage, cost, parts_cost, currency, parts, workshop)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULLIF($9,''),$10,$11)
+		 RETURNING `+recordCols,
+		req.CarID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost,
+		req.Currency, req.Parts, req.Workshop,
+	))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +39,7 @@ func GetRecordsByCar(ctx context.Context, carID uuid.UUID, recType string, limit
 	if limit <= 0 {
 		limit = 50
 	}
-	query := "SELECT id, car_id, type, title, description, date, mileage, cost, parts, workshop, photos, raw_input, created_at FROM service_records WHERE car_id = $1"
+	query := "SELECT " + recordCols + " FROM service_records WHERE car_id = $1"
 	args := []any{carID}
 
 	if recType != "" {
@@ -47,9 +59,7 @@ func GetRecordsByCar(ctx context.Context, carID uuid.UUID, recType string, limit
 
 	records := []model.ServiceRecord{}
 	for rows.Next() {
-		var r model.ServiceRecord
-		err := rows.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
-			&r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+		r, err := scanRecord(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -85,15 +95,14 @@ func GetRecordCarID(ctx context.Context, recordID uuid.UUID) (uuid.UUID, error) 
 
 // UpdateRecord обновляет редактируемые поля записи обслуживания.
 func UpdateRecord(ctx context.Context, recordID uuid.UUID, req model.UpdateRecordRequest) (*model.ServiceRecord, error) {
-	var r model.ServiceRecord
-	err := Pool.QueryRow(ctx,
+	r, err := scanRecord(Pool.QueryRow(ctx,
 		`UPDATE service_records
-		 SET type = $2, title = $3, description = $4, date = $5, mileage = $6, cost = $7
+		 SET type = $2, title = $3, description = $4, date = $5, mileage = $6, cost = $7,
+		     parts_cost = $8, currency = NULLIF($9,'')
 		 WHERE id = $1
-		 RETURNING id, car_id, type, title, description, date, mileage, cost, parts, workshop, photos, raw_input, created_at`,
-		recordID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost,
-	).Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
-		&r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+		 RETURNING `+recordCols,
+		recordID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost, req.Currency,
+	))
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +128,7 @@ func GetLatestRecordID(ctx context.Context, carID uuid.UUID) (uuid.UUID, error) 
 
 func GetExpensesByCar(ctx context.Context, carID uuid.UUID) ([]model.ServiceRecord, error) {
 	rows, err := Pool.Query(ctx,
-		"SELECT id, car_id, type, title, description, date, mileage, cost, parts, workshop, photos, raw_input, created_at FROM service_records WHERE car_id = $1 AND cost IS NOT NULL ORDER BY date DESC",
+		"SELECT "+recordCols+" FROM service_records WHERE car_id = $1 AND (cost IS NOT NULL OR parts_cost IS NOT NULL) ORDER BY date DESC",
 		carID,
 	)
 	if err != nil {
@@ -129,9 +138,7 @@ func GetExpensesByCar(ctx context.Context, carID uuid.UUID) ([]model.ServiceReco
 
 	records := []model.ServiceRecord{}
 	for rows.Next() {
-		var r model.ServiceRecord
-		err := rows.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
-			&r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+		r, err := scanRecord(rows)
 		if err != nil {
 			return nil, err
 		}

@@ -64,6 +64,37 @@ func GetCar(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(car)
 }
 
+func UpdateCar(w http.ResponseWriter, r *http.Request) {
+	carID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid car id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if _, ok := authorizeCar(w, r, carID); !ok {
+		return
+	}
+
+	var req model.UpdateCarRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Brand == "" || req.Model == "" {
+		http.Error(w, `{"error":"brand and model required"}`, http.StatusBadRequest)
+		return
+	}
+
+	car, err := db.UpdateCar(r.Context(), carID, req)
+	if err != nil {
+		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(car)
+}
+
 func UpdateMileage(w http.ResponseWriter, r *http.Request) {
 	carID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

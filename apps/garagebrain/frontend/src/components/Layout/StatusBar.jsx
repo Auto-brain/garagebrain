@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../lib/api.js';
 import { enableNotifications, pushSupported } from '../../lib/notifications.js';
+import { formatMoney } from '../../lib/money.js';
 
-export default function StatusBar({ car }) {
+export default function StatusBar({ car, currency }) {
   const [stats, setStats] = useState(null);
   const [fuel, setFuel] = useState(null);
   const [nextReminder, setNextReminder] = useState(null);
@@ -38,7 +39,7 @@ export default function StatusBar({ car }) {
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 bg-white border-b border-gray-200 text-sm">
       <Metric label="Пробег" value={`${car.mileage.toLocaleString()} км`} />
-      {stats && <Metric label="Расходы" value={`${stats.total_cost.toLocaleString()} ₽`} />}
+      {stats && <Metric label="Расходы" value={formatMoney(stats.total_cost, null, currency)} />}
       {fuel && fuel.avg_consumption > 0 && (
         <Metric label="Расход" value={`${fuel.avg_consumption.toFixed(1)} л/100км`} />
       )}

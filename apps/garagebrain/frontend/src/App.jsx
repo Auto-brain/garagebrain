@@ -76,6 +76,11 @@ export default function App() {
     setView('chat');
   };
 
+  const handleCarUpdate = (updated) => {
+    setCars((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setSelectedCar((prev) => (prev && prev.id === updated.id ? updated : prev));
+  };
+
   if (view === 'auth') {
     return <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />;
   }
@@ -90,8 +95,9 @@ export default function App() {
         onLogout={handleLogout}
         onAddCar={() => setView('addcar')}
         onUserUpdate={setUser}
+        onCarUpdate={handleCarUpdate}
       />
-      {selectedCar && <StatusBar car={selectedCar} />}
+      {selectedCar && <StatusBar car={selectedCar} currency={user?.currency} />}
 
       {selectedCar && (
         <div className="flex gap-1 px-4 pt-2 bg-gray-50 border-b border-gray-200">
@@ -102,19 +108,18 @@ export default function App() {
 
       {tab === 'dashboard' && selectedCar ? (
         <div className="flex-1 overflow-y-auto p-4 max-w-3xl w-full mx-auto space-y-6">
-          <PassportCard car={selectedCar} />
-          <ExpenseChart car={selectedCar} />
+          <PassportCard car={selectedCar} currency={user?.currency} />
+          <ExpenseChart car={selectedCar} currency={user?.currency} />
         </div>
       ) : (
         <div className="flex-1 flex overflow-hidden">
           <HistorySidebar
             car={selectedCar}
-            onSelectRecord={(record) => {
-              setHistory([...history, record]);
-            }}
+            currency={user?.currency}
           />
           <ChatWindow
             car={selectedCar}
+            currency={user?.currency}
             onAddCar={() => setView('addcar')}
           />
         </div>

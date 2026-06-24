@@ -4,7 +4,7 @@ import MessageBubble from './MessageBubble.jsx';
 import RecordCard from './RecordCard.jsx';
 import AlertCard from './AlertCard.jsx';
 
-export default function ChatWindow({ car, onAddCar }) {
+export default function ChatWindow({ car, onAddCar, currency }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,7 @@ export default function ChatWindow({ car, onAddCar }) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, i) => {
           if (msg.role === 'record') {
-            return <RecordCard key={i} record={msg.record} />;
+            return <RecordCard key={i} record={msg.record} currency={currency} />;
           }
           return <MessageBubble key={i} message={msg} />;
         })}
