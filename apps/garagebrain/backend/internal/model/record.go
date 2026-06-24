@@ -8,46 +8,49 @@ import (
 )
 
 type ServiceRecord struct {
-	ID          uuid.UUID       `json:"id"`
-	CarID       uuid.UUID       `json:"car_id"`
-	Type        string          `json:"type"`
-	Title       string          `json:"title"`
-	Description string          `json:"description,omitempty"`
-	Date        time.Time       `json:"date"`
-	Mileage     *int            `json:"mileage"`
-	Cost        *int            `json:"cost"`
-	PartsCost   *int            `json:"parts_cost"`
-	Currency    string          `json:"currency"`
-	Parts       json.RawMessage `json:"parts"`
-	Workshop    *string         `json:"workshop"`
-	Photos      []string        `json:"photos,omitempty"`
-	RawInput    *string         `json:"raw_input,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
+	ID            uuid.UUID       `json:"id"`
+	CarID         uuid.UUID       `json:"car_id"`
+	Type          string          `json:"type"`
+	Title         string          `json:"title"`
+	Description   string          `json:"description,omitempty"`
+	Date          time.Time       `json:"date"`
+	Mileage       *int            `json:"mileage"`
+	Cost          *int            `json:"cost"`
+	PartsCost     *int            `json:"parts_cost"`
+	Currency      string          `json:"currency"`
+	PartsCurrency string          `json:"parts_currency"`
+	Parts         json.RawMessage `json:"parts"`
+	Workshop      *string         `json:"workshop"`
+	Photos        []string        `json:"photos,omitempty"`
+	RawInput      *string         `json:"raw_input,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
 }
 
 type CreateRecordRequest struct {
-	CarID       uuid.UUID       `json:"car_id"`
-	Type        string          `json:"type"`
-	Title       string          `json:"title"`
-	Description string          `json:"description,omitempty"`
-	Date        string          `json:"date"`
-	Mileage     *int            `json:"mileage"`
-	Cost        *int            `json:"cost"`
-	PartsCost   *int            `json:"parts_cost"`
-	Currency    string          `json:"currency"`
-	Parts       json.RawMessage `json:"parts"`
-	Workshop    *string         `json:"workshop"`
+	CarID         uuid.UUID       `json:"car_id"`
+	Type          string          `json:"type"`
+	Title         string          `json:"title"`
+	Description   string          `json:"description,omitempty"`
+	Date          string          `json:"date"`
+	Mileage       *int            `json:"mileage"`
+	Cost          *int            `json:"cost"`
+	PartsCost     *int            `json:"parts_cost"`
+	Currency      string          `json:"currency"`
+	PartsCurrency string          `json:"parts_currency"`
+	Parts         json.RawMessage `json:"parts"`
+	Workshop      *string         `json:"workshop"`
 }
 
 type UpdateRecordRequest struct {
-	Type        string `json:"type"`
-	Title       string `json:"title"`
-	Description string `json:"description,omitempty"`
-	Date        string `json:"date"`
-	Mileage     *int   `json:"mileage"`
-	Cost        *int   `json:"cost"`
-	PartsCost   *int   `json:"parts_cost"`
-	Currency    string `json:"currency"`
+	Type          string `json:"type"`
+	Title         string `json:"title"`
+	Description   string `json:"description,omitempty"`
+	Date          string `json:"date"`
+	Mileage       *int   `json:"mileage"`
+	Cost          *int   `json:"cost"`
+	PartsCost     *int   `json:"parts_cost"`
+	Currency      string `json:"currency"`
+	PartsCurrency string `json:"parts_currency"`
 }
 
 type FuelRecord struct {

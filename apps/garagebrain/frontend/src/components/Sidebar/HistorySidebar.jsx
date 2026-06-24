@@ -74,8 +74,9 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
   const [date, setDate] = useState((record.date || '').slice(0, 10));
   const [mileage, setMileage] = useState(record.mileage ?? '');
   const [cost, setCost] = useState(record.cost ?? '');
+  const [costCurrency, setCostCurrency] = useState(record.currency || defaultCurrency || '');
   const [partsCost, setPartsCost] = useState(record.parts_cost ?? '');
-  const [currency, setCurrency] = useState(record.currency || defaultCurrency || '');
+  const [partsCurrency, setPartsCurrency] = useState(record.parts_currency || defaultCurrency || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -90,8 +91,9 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
         date,
         mileage: mileage === '' ? null : parseInt(mileage, 10),
         cost: cost === '' ? null : parseInt(cost, 10),
+        currency: costCurrency,
         parts_cost: partsCost === '' ? null : parseInt(partsCost, 10),
-        currency,
+        parts_currency: partsCurrency,
       });
       onSaved();
     } catch (e) {
@@ -99,6 +101,14 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
       setBusy(false);
     }
   };
+
+  const curSelect = (value, onChange) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="w-24 px-2 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">—</option>
+      {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+    </select>
+  );
 
   const remove = async () => {
     if (!confirm('Удалить запись?')) return;
@@ -129,17 +139,18 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <div className="flex gap-3">
-            <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="Стоимость работ"
+          <div className="flex gap-2">
+            <input type="number" value={cost} onChange={(e) => setCost(e.target.value)}
+              placeholder={type === 'fuel' ? 'Работа (0)' : 'Стоимость работ'}
               className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="number" value={partsCost} onChange={(e) => setPartsCost(e.target.value)} placeholder="Материалы"
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {curSelect(costCurrency, setCostCurrency)}
           </div>
-          <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Валюта по умолчанию</option>
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <div className="flex gap-2">
+            <input type="number" value={partsCost} onChange={(e) => setPartsCost(e.target.value)}
+              placeholder={type === 'fuel' ? 'Стоимость топлива' : 'Материалы'}
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {curSelect(partsCurrency, setPartsCurrency)}
+          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={remove} disabled={busy}

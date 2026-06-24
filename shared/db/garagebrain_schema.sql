@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   cost INT,
   parts_cost INT,
   currency TEXT,
+  parts_currency TEXT,
   parts JSONB DEFAULT '[]',
   workshop TEXT,
   photos TEXT[],

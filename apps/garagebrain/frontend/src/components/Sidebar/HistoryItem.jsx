@@ -14,9 +14,19 @@ export default function HistoryItem({ record, currency, onClick }) {
     month: 'short',
     year: 'numeric',
   });
-  const cur = record.currency || currency;
-  const total = (record.cost || 0) + (record.parts_cost || 0);
-  const hasMoney = record.cost != null || record.parts_cost != null;
+  const costCur = record.currency || currency;
+  const partsCur = record.parts_currency || currency;
+  const hasCost = record.cost != null;
+  const hasParts = record.parts_cost != null;
+  const hasMoney = hasCost || hasParts;
+  const bothSame = hasCost && hasParts && costCur === partsCur;
+
+  // Заголовок: если обе суммы в одной валюте — складываем; иначе показываем ту,
+  // что есть (или работу), а полную разбивку даём строкой ниже.
+  let headline;
+  if (bothSame) headline = formatMoney(record.cost + record.parts_cost, costCur);
+  else if (hasCost) headline = formatMoney(record.cost, costCur);
+  else if (hasParts) headline = formatMoney(record.parts_cost, partsCur);
 
   return (
     <button
@@ -29,15 +39,15 @@ export default function HistoryItem({ record, currency, onClick }) {
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-sm font-medium text-gray-800 truncate">{record.title}</p>
             {hasMoney
-              ? <span className="text-sm text-red-600 font-semibold whitespace-nowrap">{formatMoney(total, cur)}</span>
+              ? <span className="text-sm text-red-600 font-semibold whitespace-nowrap">{headline}</span>
               : <span className="text-xs text-gray-300 whitespace-nowrap">—</span>}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-gray-500">
             <span className="px-1.5 py-0.5 bg-gray-100 rounded">{meta.label}</span>
             <span>{date}</span>
             {record.mileage != null && <span>· {record.mileage.toLocaleString()} км</span>}
-            {record.parts_cost != null && record.cost != null && (
-              <span>· работа {formatMoney(record.cost, cur)} + материалы {formatMoney(record.parts_cost, cur)}</span>
+            {hasCost && hasParts && (
+              <span>· работа {formatMoney(record.cost, costCur)} + материалы {formatMoney(record.parts_cost, partsCur)}</span>
             )}
           </div>
         </div>
