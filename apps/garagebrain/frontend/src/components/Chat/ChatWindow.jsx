@@ -4,7 +4,7 @@ import MessageBubble from './MessageBubble.jsx';
 import RecordCard from './RecordCard.jsx';
 import AlertCard from './AlertCard.jsx';
 
-export default function ChatWindow({ car, onAddCar, currency }) {
+export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
         ? '📸 Фото чека прикреплено к последней записи.'
         : '📸 Фото сохранено. Опишите обслуживание — и я привяжу его к записи.';
       setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
+      if (res.record_id && onRecordSaved) onRecordSaved();
     } catch (err) {
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Не удалось загрузить фото.' }]);
     } finally {
@@ -72,6 +73,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
           role: 'record',
           record: res.parsed_record,
         });
+        if (onRecordSaved) onRecordSaved();
       }
 
       setMessages((prev) => [...prev, ...newMessages]);
@@ -118,7 +120,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
   return (
     <div className="flex-1 flex flex-col">
       {dueReminders.length > 0 && (
-        <div className="p-3 bg-yellow-50 border-b border-yellow-200">
+        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800">
           {dueReminders.map((r) => (
             <AlertCard key={r.id} reminder={r} />
           ))}
@@ -135,7 +137,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl px-4 py-3">
+            <div className="bg-gray-100 dark:bg-slate-700 rounded-2xl px-4 py-3">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -148,7 +150,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="flex gap-3">
           <input
             ref={fileInputRef}
@@ -161,7 +163,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             title="Прикрепить фото чека"
-            className="px-3 py-3 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-100 transition disabled:opacity-50"
+            className="px-3 py-3 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition disabled:opacity-50"
           >
             {uploading ? '…' : '📎'}
           </button>
@@ -171,7 +173,7 @@ export default function ChatWindow({ car, onAddCar, currency }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Расскажите о обслуживании..."
-            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
           <button
@@ -202,7 +204,7 @@ function QuickAction({ children, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition"
+      className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition"
     >
       {children}
     </button>

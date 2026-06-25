@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { api } from '../../lib/api.js';
+import { getTheme, toggleTheme } from '../../lib/theme.js';
 
 export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate, onCarUpdate }) {
   const [showCars, setShowCars] = useState(false);
   const [linking, setLinking] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editCar, setEditCar] = useState(false);
+  const [theme, setThemeState] = useState(getTheme());
 
   const connectTelegram = async () => {
     setLinking(true);
@@ -25,26 +27,26 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
 
   return (
     <>
-    <header className="bg-white border-b border-gray-200 px-4 py-3">
+    <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-600">GarageBrain</h1>
+          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">GarageBrain</h1>
 
           {selectedCar && (
             <div className="relative">
               <button
                 onClick={() => setShowCars(!showCars)}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition"
               >
                 <span className="font-medium">{selectedCar.brand} {selectedCar.model}</span>
-                {selectedCar.year && <span className="text-gray-500">({selectedCar.year})</span>}
+                {selectedCar.year && <span className="text-gray-500 dark:text-gray-400">({selectedCar.year})</span>}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
               {showCars && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[200px]">
                   {cars.map((car) => (
                     <button
                       key={car.id}
@@ -52,17 +54,17 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
                         onSelectCar(car);
                         setShowCars(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                        car.id === selectedCar.id ? 'bg-blue-50 text-blue-600' : ''
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 ${
+                        car.id === selectedCar.id ? 'bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : ''
                       }`}
                     >
                       {car.brand} {car.model}
-                      {car.year && <span className="text-gray-500 ml-1">({car.year})</span>}
+                      {car.year && <span className="text-gray-500 dark:text-gray-400 ml-1">({car.year})</span>}
                     </button>
                   ))}
                   <button
                     onClick={() => { setShowCars(false); setEditCar(true); }}
-                    className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50 border-t border-gray-100"
+                    className="w-full text-left px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-100 dark:border-slate-700"
                   >
                     ✏️ Изменить текущее
                   </button>
@@ -71,7 +73,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
                       setShowCars(false);
                       onAddCar();
                     }}
-                    className="w-full text-left px-4 py-2 text-blue-600 hover:bg-blue-50 border-t border-gray-100"
+                    className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 border-t border-gray-100 dark:border-slate-700"
                   >
                     + Добавить авто
                   </button>
@@ -96,9 +98,16 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
             {linking ? '…' : '✈️ Telegram'}
           </button>
           <button
+            onClick={() => setThemeState(toggleTheme())}
+            title="Тема"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             title="Настройки"
-            className="text-gray-500 hover:text-gray-700 text-sm"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
           >
             ⚙️
           </button>
@@ -156,24 +165,24 @@ function EditCarModal({ car, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Изменить автомобиль</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
           <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Марка"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Модель"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <div className="flex gap-3">
             <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Год"
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <input type="text" value={engine} onChange={(e) => setEngine(e.target.value)} placeholder="Двигатель (напр. 1.6)"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} placeholder="VIN"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} disabled={busy}
@@ -234,7 +243,7 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Настройки</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-4">
@@ -242,14 +251,14 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
             <span className="text-sm text-gray-500">Имя</span>
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
           <label className="block">
             <span className="text-sm text-gray-500">Страна</span>
             <select
               value={country} onChange={(e) => handleCountryChange(e.target.value)}
-              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
@@ -259,14 +268,14 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
             <input
               type="text" value={region} onChange={(e) => setRegion(e.target.value)}
               placeholder="напр. Минская область"
-              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
           <label className="block">
             <span className="text-sm text-gray-500">Валюта по умолчанию</span>
             <select
               value={currency} onChange={(e) => setCurrency(e.target.value)}
-              className="w-full mt-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               <option value="">— не выбрано —</option>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}

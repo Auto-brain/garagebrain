@@ -3,7 +3,7 @@ import { api } from '../../lib/api.js';
 import { currencyDecimals } from '../../lib/money.js';
 import HistoryItem from './HistoryItem.jsx';
 
-export default function HistorySidebar({ car, currency }) {
+export default function HistorySidebar({ car, currency, onChanged, refreshKey }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,28 +22,30 @@ export default function HistorySidebar({ car, currency }) {
       .finally(() => setLoading(false));
   }, [car?.id]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { reload(); }, [reload, refreshKey]);
 
   if (!car) return null;
 
+  const afterChange = () => { setEditing(null); reload(); if (onChanged) onChanged(); };
+
   return (
-    <div className="w-72 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-gray-800">История</h2>
-      </div>
+    <div className="max-w-3xl w-full mx-auto p-4">
+      <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">История обслуживания</h2>
 
       {loading ? (
-        <div className="p-4 text-center text-gray-500 text-sm">Загрузка...</div>
+        <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">Загрузка...</div>
       ) : error ? (
-        <div className="p-4 m-3 text-center text-red-600 bg-red-50 rounded-lg text-sm">{error}</div>
+        <div className="p-4 text-center text-red-600 bg-red-50 dark:bg-red-900/30 rounded-lg text-sm">{error}</div>
       ) : (records || []).length === 0 ? (
-        <div className="p-4 text-center text-gray-400 text-sm">
-          Пока нет записей. Расскажите о обслуживании в чате.
+        <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+          Пока нет записей. Расскажите о обслуживании в чате справа.
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-2">
           {records.map((record) => (
-            <HistoryItem key={record.id} record={record} currency={currency} onClick={() => setEditing(record)} />
+            <div key={record.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl">
+              <HistoryItem record={record} currency={currency} onClick={() => setEditing(record)} />
+            </div>
           ))}
         </div>
       )}
@@ -53,7 +55,7 @@ export default function HistorySidebar({ car, currency }) {
           record={editing}
           defaultCurrency={currency}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); reload(); }}
+          onSaved={afterChange}
         />
       )}
     </div>
@@ -105,7 +107,7 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
 
   const curSelect = (value, onChange) => (
     <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-24 px-2 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      className="w-24 px-2 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
       <option value="">—</option>
       {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
     </select>
@@ -126,32 +128,32 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Редактировать запись</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
           <select value={type} onChange={(e) => setType(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
             {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Описание"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <div className="flex gap-2">
             <input type="number" step={currencyDecimals(costCurrency) ? '0.01' : '1'}
               value={cost} onChange={(e) => setCost(e.target.value)}
               placeholder={type === 'fuel' ? 'Работа (0)' : 'Стоимость работ'}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             {curSelect(costCurrency, setCostCurrency)}
           </div>
           <div className="flex gap-2">
             <input type="number" step={currencyDecimals(partsCurrency) ? '0.01' : '1'}
               value={partsCost} onChange={(e) => setPartsCost(e.target.value)}
               placeholder={type === 'fuel' ? 'Стоимость топлива' : 'Материалы'}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             {curSelect(partsCurrency, setPartsCurrency)}
           </div>
         </div>

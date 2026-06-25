@@ -122,6 +122,13 @@ make dev-frontend    # :5173  (vite, проксирует /api → :3002)
 **Порядок важен:** сначала backend (gateway и фронт зависят от него). Gateway без
 доступного backend стартует, но чат/фото в боте будут возвращать ошибку.
 
+> ⚠️ Gateway читает `.env` **из своего рабочего каталога** (`apps/gateway/.env`).
+> Если запустить бинарник из другого каталога (напр. из `apps/garagebrain/backend`),
+> подхватится не тот `.env` без `TELEGRAM_BOT_TOKEN` → бот не запустится (polling
+> не идёт, `pending_update_count` в `getWebhookInfo` растёт), хотя `/health` и
+> `/webhook/incoming` работают. Запускайте gateway из `apps/gateway` (или через
+> `make dev-gateway`).
+
 ---
 
 ## 5. Запуск в PRODUCTION (VPS + systemd + nginx)

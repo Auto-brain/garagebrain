@@ -12,8 +12,17 @@ export default function App() {
   const [cars, setCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [view, setView] = useState('auth');
-  const [tab, setTab] = useState('chat');
-  const [history, setHistory] = useState([]);
+  const [mainView, setMainView] = useState('records');
+  const [chatOpen, setChatOpen] = useState(() => localStorage.getItem('chatOpen') !== 'false');
+  const [dataVersion, setDataVersion] = useState(0);
+  const bumpData = () => setDataVersion((v) => v + 1);
+
+  const toggleChat = () => {
+    setChatOpen((prev) => {
+      localStorage.setItem('chatOpen', String(!prev));
+      return !prev;
+    });
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -65,7 +74,6 @@ export default function App() {
     setUser(null);
     setCars([]);
     setSelectedCar(null);
-    setHistory([]);
     setView('auth');
   };
 
@@ -86,7 +94,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
       <Header
         user={user}
         cars={cars}
@@ -97,39 +105,80 @@ export default function App() {
         onUserUpdate={setUser}
         onCarUpdate={handleCarUpdate}
       />
-      {selectedCar && <StatusBar car={selectedCar} currency={user?.currency} />}
+      {selectedCar && <StatusBar car={selectedCar} currency={user?.currency} refreshKey={dataVersion} />}
 
-      {selectedCar && (
-        <div className="flex gap-1 px-4 pt-2 bg-gray-50 border-b border-gray-200">
-          <TabButton active={tab === 'chat'} onClick={() => setTab('chat')}>Чат</TabButton>
-          <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>Статистика</TabButton>
-        </div>
-      )}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Основная область: записи / статистика */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {selectedCar && (
+            <div className="flex gap-1 px-4 pt-2 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+              <TabButton active={mainView === 'records'} onClick={() => setMainView('records')}>Записи</TabButton>
+              <TabButton active={mainView === 'stats'} onClick={() => setMainView('stats')}>Статистика</TabButton>
+              {!chatOpen && (
+                <button
+                  onClick={toggleChat}
+                  className="ml-auto mb-1 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                >
+                  💬 Чат
+                </button>
+              )}
+            </div>
+          )}
 
-      {tab === 'dashboard' && selectedCar ? (
-        <div className="flex-1 overflow-y-auto p-4 max-w-3xl w-full mx-auto space-y-6">
-          <PassportCard car={selectedCar} currency={user?.currency} />
-          <ExpenseChart car={selectedCar} currency={user?.currency} />
-        </div>
-      ) : (
-        <div className="flex-1 flex overflow-hidden">
-          <HistorySidebar
-            car={selectedCar}
-            currency={user?.currency}
-          />
-          <ChatWindow
-            car={selectedCar}
-            currency={user?.currency}
-            onAddCar={() => setView('addcar')}
-          />
-        </div>
-      )}
+          {mainView === 'stats' && selectedCar ? (
+            <div className="flex-1 overflow-y-auto p-4 max-w-3xl w-full mx-auto space-y-6">
+              <PassportCard car={selectedCar} currency={user?.currency} />
+              <ExpenseChart car={selectedCar} currency={user?.currency} refreshKey={dataVersion} />
+            </div>
+          ) : (
+            <RecordsPanel
+              car={selectedCar}
+              currency={user?.currency}
+              onAddCar={() => setView('addcar')}
+              onChanged={bumpData}
+              refreshKey={dataVersion}
+            />
+          )}
+        </main>
+
+        {/* Чат — сворачиваемая боковая панель */}
+        {selectedCar && chatOpen && (
+          <aside className="w-full max-w-sm flex flex-col border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">💬 Чат-дневник</span>
+              <button onClick={toggleChat} title="Свернуть" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+            </div>
+            <ChatWindow car={selectedCar} currency={user?.currency} onAddCar={() => setView('addcar')} onRecordSaved={bumpData} />
+          </aside>
+        )}
+      </div>
+
       {view === 'addcar' && (
         <AddCarModal
           onAdd={handleAddCar}
-          onClose={() => setView('chat')}
+          onClose={() => setView('records')}
         />
       )}
+    </div>
+  );
+}
+
+function RecordsPanel({ car, currency, onAddCar, onChanged, refreshKey }) {
+  if (!car) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Добавьте автомобиль для начала</p>
+          <button onClick={onAddCar} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+            Добавить авто
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <HistorySidebar car={car} currency={currency} onChanged={onChanged} refreshKey={refreshKey} />
     </div>
   );
 }
@@ -139,7 +188,9 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium rounded-t-lg transition ${
-        active ? 'bg-white text-blue-600 border border-b-0 border-gray-200' : 'text-gray-500 hover:text-gray-700'
+        active
+          ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-b-0 border-gray-200 dark:border-slate-700'
+          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
       }`}
     >
       {children}
@@ -174,7 +225,7 @@ function AuthScreen({ onLogin, onRegister }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-2">GarageBrain</h1>
         <p className="text-gray-500 text-center mb-6">Чат-дневник вашего автомобиля</p>
 
@@ -189,7 +240,7 @@ function AuthScreen({ onLogin, onRegister }) {
               placeholder="Ваше имя"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           )}
           <input
@@ -197,7 +248,7 @@ function AuthScreen({ onLogin, onRegister }) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -205,7 +256,7 @@ function AuthScreen({ onLogin, onRegister }) {
             placeholder="Пароль"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <button
@@ -251,7 +302,7 @@ function AddCarModal({ onAdd, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Добавить автомобиль</h2>
 
         {error && (
@@ -264,7 +315,7 @@ function AddCarModal({ onAdd, onClose }) {
             placeholder="Марка (Toyota, BMW...)"
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -272,7 +323,7 @@ function AddCarModal({ onAdd, onClose }) {
             placeholder="Модель (RAV4, X5...)"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -280,14 +331,14 @@ function AddCarModal({ onAdd, onClose }) {
             placeholder="Год выпуска"
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="number"
             placeholder="Текущий пробег (км)"
             value={mileage}
             onChange={(e) => setMileage(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex gap-3">
             <button

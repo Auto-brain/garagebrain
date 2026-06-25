@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component {
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-md text-center">
           <div className="text-4xl mb-3">⚠️</div>
           <h1 className="text-lg font-bold text-gray-800 mb-2">Что-то пошло не так</h1>
           <p className="text-gray-500 text-sm mb-5">

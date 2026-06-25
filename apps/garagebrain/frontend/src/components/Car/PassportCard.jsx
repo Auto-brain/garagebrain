@@ -30,11 +30,11 @@ export default function PassportCard({ car }) {
   if (!car) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-bold text-gray-800">{car.brand} {car.model}</h3>
-          {car.year && <p className="text-sm text-gray-500">{car.year} год</p>}
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{car.brand} {car.model}</h3>
+          {car.year && <p className="text-sm text-gray-500 dark:text-gray-400">{car.year} год</p>}
         </div>
         <button
           onClick={downloadPassport}
@@ -64,8 +64,8 @@ export default function PassportCard({ car }) {
 function Field({ label, value }) {
   return (
     <div>
-      <dt className="text-gray-400">{label}</dt>
-      <dd className="font-medium text-gray-800">{value}</dd>
+      <dt className="text-gray-400 dark:text-gray-500">{label}</dt>
+      <dd className="font-medium text-gray-800 dark:text-gray-100">{value}</dd>
     </div>
   );
 }

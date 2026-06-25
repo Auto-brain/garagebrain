@@ -31,9 +31,9 @@ export default function ExpenseChart({ car, currency }) {
       .finally(() => setLoading(false));
   }, [car?.id]);
 
-  if (loading) return <div className="p-6 text-gray-400 text-sm">Загрузка статистики…</div>;
+  if (loading) return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">Загрузка статистики…</div>;
   if (!stats || stats.record_count === 0) {
-    return <div className="p-6 text-gray-400 text-sm">Пока нет расходов для графика.</div>;
+    return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">Пока нет расходов для графика.</div>;
   }
 
   const monthly = Object.entries(stats.monthly_costs || {})
@@ -45,11 +45,11 @@ export default function ExpenseChart({ car, currency }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
         <div className="flex items-baseline justify-between mb-4">
-          <h3 className="font-semibold text-gray-800">Расходы по месяцам</h3>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100">Расходы по месяцам</h3>
           <span className="text-sm text-gray-500">
-            Всего: <span className="font-semibold text-gray-800">{formatMoney(stats.total_cost, null, currency)}</span>
+            Всего: <span className="font-semibold text-gray-800 dark:text-gray-100">{formatMoney(stats.total_cost, null, currency)}</span>
           </span>
         </div>
         <ResponsiveContainer width="100%" height={220}>
@@ -63,8 +63,8 @@ export default function ExpenseChart({ car, currency }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-800 mb-4">По категориям</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">По категориям</h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={byType} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
