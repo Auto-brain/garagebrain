@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -81,16 +82,26 @@ func (tb *TelegramBot) handleUpdate(ctx context.Context, b *tgbotapi.Bot, update
 }
 
 // send рендерит нормализованный OutgoingMessage в вызов Telegram Bot API.
+// Если отправка с ParseMode падает (например, Markdown ломается на спецсимволах
+// в названии записи/ответе AI → Telegram 400), повторяем без разметки, чтобы
+// сообщение всё равно дошло (иначе бот «молчит»).
 func (tb *TelegramBot) send(ctx context.Context, out model.OutgoingMessage) {
 	chatID, err := strconv.ParseInt(out.ChatID, 10, 64)
 	if err != nil {
 		return
 	}
-	tb.bot.SendMessage(ctx, &tgbotapi.SendMessageParams{
+	_, err = tb.bot.SendMessage(ctx, &tgbotapi.SendMessageParams{
 		ChatID:    chatID,
 		Text:      out.Text,
 		ParseMode: models.ParseMode(out.ParseMode),
 	})
+	if err != nil && out.ParseMode != "" {
+		log.Printf("telegram send (parse_mode=%s) failed: %v — retrying as plain text", out.ParseMode, err)
+		_, err = tb.bot.SendMessage(ctx, &tgbotapi.SendMessageParams{ChatID: chatID, Text: out.Text})
+	}
+	if err != nil {
+		log.Printf("telegram send failed: %v", err)
+	}
 }
 
 // handlePhoto скачивает самое крупное фото из Telegram и загружает его в бэкенд,
