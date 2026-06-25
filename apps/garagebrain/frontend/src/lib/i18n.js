@@ -32,6 +32,7 @@ export function t(key) {
 
 const dict = {
   ru: {
+    tgLink: "Привязать Telegram", tgLinkBtn: "Привязать", tgCodePh: "Код из /link", tgLinked: "Telegram привязан!",
     appTagline: 'Чат-дневник вашего автомобиля', km: 'км',
     yourName: 'Ваше имя', email: 'Email', password: 'Пароль',
     login: 'Войти', register: 'Зарегистрироваться', loading: 'Загрузка...',
@@ -61,6 +62,7 @@ const dict = {
     requiredBrandModel: 'Марка и модель обязательны', requiredTitleDate: 'Описание и дата обязательны',
   },
   en: {
+    tgLink: "Link Telegram", tgLinkBtn: "Link", tgCodePh: "Code from /link", tgLinked: "Telegram linked!",
     appTagline: 'Chat diary for your car', km: 'km',
     yourName: 'Your name', email: 'Email', password: 'Password',
     login: 'Sign in', register: 'Sign up', loading: 'Loading...',
@@ -90,6 +92,7 @@ const dict = {
     requiredBrandModel: 'Make and model are required', requiredTitleDate: 'Description and date are required',
   },
   es: {
+    tgLink: "Vincular Telegram", tgLinkBtn: "Vincular", tgCodePh: "Código de /link", tgLinked: "¡Telegram vinculado!",
     appTagline: 'Diario de chat de tu coche', km: 'km',
     yourName: 'Tu nombre', email: 'Email', password: 'Contraseña',
     login: 'Entrar', register: 'Registrarse', loading: 'Cargando...',
@@ -119,6 +122,7 @@ const dict = {
     requiredBrandModel: 'Marca y modelo son obligatorios', requiredTitleDate: 'Descripción y fecha son obligatorias',
   },
   fr: {
+    tgLink: "Lier Telegram", tgLinkBtn: "Lier", tgCodePh: "Code de /link", tgLinked: "Telegram lié !",
     appTagline: 'Journal de bord de votre voiture', km: 'km',
     yourName: 'Votre nom', email: 'Email', password: 'Mot de passe',
     login: 'Se connecter', register: "S'inscrire", loading: 'Chargement...',
@@ -148,6 +152,7 @@ const dict = {
     requiredBrandModel: 'La marque et le modèle sont requis', requiredTitleDate: 'Description et date requises',
   },
   pl: {
+    tgLink: "Połącz Telegram", tgLinkBtn: "Połącz", tgCodePh: "Kod z /link", tgLinked: "Telegram połączony!",
     appTagline: 'Czatowy dziennik Twojego auta', km: 'km',
     yourName: 'Twoje imię', email: 'Email', password: 'Hasło',
     login: 'Zaloguj', register: 'Zarejestruj', loading: 'Ładowanie...',
@@ -177,6 +182,7 @@ const dict = {
     requiredBrandModel: 'Marka i model są wymagane', requiredTitleDate: 'Opis i data są wymagane',
   },
   uk: {
+    tgLink: "Прив'язати Telegram", tgLinkBtn: "Прив'язати", tgCodePh: "Код з /link", tgLinked: "Telegram прив'язано!",
     appTagline: "Чат-щоденник вашого авто",
     km: "км",
     yourName: "Ваше ім'я",
@@ -260,6 +266,7 @@ const dict = {
     requiredTitleDate: "Опис і дата обов'язкові",
   },
   be: {
+    tgLink: "Прывязаць Telegram", tgLinkBtn: "Прывязаць", tgCodePh: "Код з /link", tgLinked: "Telegram прывязаны!",
     appTagline: "Чат-дзённік вашага аўто",
     km: "км",
     yourName: "Ваша імя",
@@ -343,6 +350,7 @@ const dict = {
     requiredTitleDate: "Апісанне і дата абавязковыя",
   },
   kk: {
+    tgLink: "Telegram байланыстыру", tgLinkBtn: "Байланыстыру", tgCodePh: "/link коды", tgLinked: "Telegram байланыстырылды!",
     appTagline: "Көлігіңіздің чат-күнделігі",
     km: "км",
     yourName: "Атыңыз",

@@ -253,6 +253,19 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
   const [language, setLang] = useState(user?.language || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [linkCode, setLinkCode] = useState('');
+  const [linkMsg, setLinkMsg] = useState('');
+
+  const confirmLink = async () => {
+    setLinkMsg('');
+    try {
+      await api.linkTelegramConfirm(linkCode.trim());
+      setLinkMsg('✅ ' + t('tgLinked'));
+      setLinkCode('');
+    } catch (e) {
+      setLinkMsg('⚠️ ' + (e.message || ''));
+    }
+  };
 
   const handleCountryChange = (code) => {
     setCountry(code);
@@ -324,6 +337,21 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
               {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </label>
+          <div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('tgLink')}</span>
+            <div className="flex gap-2 mt-1">
+              <input
+                type="text" value={linkCode} onChange={(e) => setLinkCode(e.target.value)}
+                placeholder={t('tgCodePh')}
+                className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button onClick={confirmLink} disabled={!linkCode.trim()}
+                className="px-4 py-3 rounded-lg bg-sky-50 text-sky-600 dark:bg-slate-700 dark:text-sky-400 font-medium hover:bg-sky-100 dark:hover:bg-slate-600 transition disabled:opacity-50">
+                {t('tgLinkBtn')}
+              </button>
+            </div>
+            {linkMsg && <p className="text-xs mt-1 text-gray-600 dark:text-gray-300">{linkMsg}</p>}
+          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition">

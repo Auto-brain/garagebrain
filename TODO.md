@@ -210,6 +210,11 @@
 
 ## 5. Связывание аккаунтов — Вариант B (Telegram → веб по коду)
 
+> ✅ **[СДЕЛАНО]** Бот `/link` → 6-значный код (`POST /api/link/code`,
+> `account_link_tokens`, TTL 10 мин). На вебе в настройках поле «Привязать
+> Telegram» → `POST /api/link/telegram/confirm` сверяет код и сливает
+> Telegram-аккаунт в веб (`MergeUsers`). Одноразовость/TTL проверены.
+
 **Суть:** дополнить уже готовый Вариант A (web → Telegram) обратным направлением.
 
 > ✅ Вариант A (deep-link `?start=link_<token>` + слияние) реализован:

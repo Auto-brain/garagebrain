@@ -55,6 +55,8 @@ func (p *Processor) Process(ctx context.Context, in model.IncomingMessage) []mod
 			return p.handleAdd(ctx, in, uid, args)
 		case "/reminders":
 			return p.handleReminders(in)
+		case "/link":
+			return p.handleLink(ctx, in, uid)
 		case "/car":
 			return p.handleCar(ctx, in, uid)
 		case "/passport":
@@ -132,6 +134,7 @@ func (p *Processor) handleHelp(in model.IncomingMessage) []model.OutgoingMessage
 /setmileage 50000 — пробег
 /del N — удалить N-ю запись из /history
 /setcost N сумма — задать стоимость записи
+/link — код для привязки к веб-аккаунту
 
 💬 Просто напишите о обслуживании — я сохраню:
 • "заменил масло 10w40, пробег 87500, 3800₽"
@@ -206,6 +209,17 @@ func (p *Processor) handleAdd(ctx context.Context, in model.IncomingMessage, uid
 
 	text := fmt.Sprintf("✅ *%s %s* добавлен!\n\n🆔 ID: %s\n📍 Пробег: %d км\n\nТеперь просто пишите о обслуживании — я сохраню.",
 		brand, model_, carID[:8], mileage)
+	return []model.OutgoingMessage{reply(in.ChatID, text, "Markdown")}
+}
+
+// handleLink (Вариант B) выдаёт 6-значный код для привязки этого Telegram к
+// веб-аккаунту: пользователь вводит код в настройках на сайте.
+func (p *Processor) handleLink(ctx context.Context, in model.IncomingMessage, uid uuid.UUID) []model.OutgoingMessage {
+	code, err := p.backend.CreateLinkCode(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось создать код. Попробуйте позже.", "")}
+	}
+	text := fmt.Sprintf("🔗 Код привязки: *%s*\n\nВойдите на сайте под своим аккаунтом, откройте настройки и введите этот код в поле «Привязать Telegram». Код действует 10 минут.", code)
 	return []model.OutgoingMessage{reply(in.ChatID, text, "Markdown")}
 }
 

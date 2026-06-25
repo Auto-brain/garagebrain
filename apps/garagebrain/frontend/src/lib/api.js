@@ -164,6 +164,10 @@ export const api = {
   // Старт связывания с Telegram (Вариант A): возвращает { token, deep_link }.
   linkTelegramStart: () => request('/link/telegram/start', { method: 'POST' }),
 
+  // Подтверждение связывания по коду из бота (Вариант B).
+  linkTelegramConfirm: (code) =>
+    request('/link/telegram/confirm', { method: 'POST', body: JSON.stringify({ code }) }),
+
   subscribePush: (subscription) =>
     request('/push/subscribe', {
       method: 'POST',

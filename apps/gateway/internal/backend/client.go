@@ -162,6 +162,18 @@ func (c *Client) ListRecords(ctx context.Context, userID uuid.UUID, carID string
 	return recs, nil
 }
 
+// CreateLinkCode запрашивает у бэкенда 6-значный код привязки для пользователя
+// (Вариант B: код показывается в боте, вводится на вебе).
+func (c *Client) CreateLinkCode(ctx context.Context, userID uuid.UUID) (string, error) {
+	var out struct {
+		Code string `json:"code"`
+	}
+	if err := c.doAuthed(ctx, userID, "POST", "/api/link/code", nil, &out); err != nil {
+		return "", err
+	}
+	return out.Code, nil
+}
+
 func (c *Client) UpdateRecord(ctx context.Context, userID uuid.UUID, recordID string, body map[string]any) error {
 	return c.doAuthed(ctx, userID, "PATCH", "/api/records/"+recordID, body, nil)
 }
