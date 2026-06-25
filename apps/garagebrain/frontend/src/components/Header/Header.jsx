@@ -93,9 +93,15 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
             onClick={connectTelegram}
             disabled={linking}
             title="Связать аккаунт с Telegram"
-            className="text-sm px-3 py-1.5 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition disabled:opacity-50"
+            className="p-2 rounded-lg text-sky-500 hover:text-sky-600 hover:bg-sky-50 dark:text-sky-400 dark:hover:text-sky-300 dark:hover:bg-slate-700 transition disabled:opacity-50"
           >
-            {linking ? '…' : '✈️ Telegram'}
+            {linking ? (
+              <span className="text-sm">…</span>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
+                <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+              </svg>
+            )}
           </button>
           <button
             onClick={() => setThemeState(toggleTheme())}
@@ -106,15 +112,14 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            title="Настройки"
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+            title="Настройки аккаунта"
+            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:underline"
           >
-            ⚙️
+            {user?.name || user?.email}
           </button>
-          <div className="text-sm text-gray-500">{user?.name || user?.email}</div>
           <button
             onClick={onLogout}
-            className="text-gray-500 hover:text-gray-700 text-sm"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
           >
             Выйти
           </button>
