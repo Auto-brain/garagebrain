@@ -71,6 +71,105 @@ func (c *Client) mintToken(userID uuid.UUID) (string, error) {
 	return token.SignedString([]byte(c.jwtSecret))
 }
 
+// doAuthed выполняет authed JSON-запрос к бэкенду от имени пользователя.
+// body может быть nil; out может быть nil. 2xx обязателен.
+func (c *Client) doAuthed(ctx context.Context, userID uuid.UUID, method, path string, body, out any) error {
+	token, err := c.mintToken(userID)
+	if err != nil {
+		return err
+	}
+
+	var reader io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return err
+		}
+		reader = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reader)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("backend %s %s -> %d: %s", method, path, resp.StatusCode, string(respBody))
+	}
+	if out != nil && len(respBody) > 0 {
+		return json.Unmarshal(respBody, out)
+	}
+	return nil
+}
+
+// Profile — поля профиля пользователя (как в /api/auth/me).
+type Profile struct {
+	Name     string `json:"name"`
+	Country  string `json:"country"`
+	Region   string `json:"region"`
+	Currency string `json:"currency"`
+}
+
+func (c *Client) GetProfile(ctx context.Context, userID uuid.UUID) (*Profile, error) {
+	var p Profile
+	if err := c.doAuthed(ctx, userID, "GET", "/api/auth/me", nil, &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (c *Client) UpdateProfile(ctx context.Context, userID uuid.UUID, p Profile) error {
+	return c.doAuthed(ctx, userID, "PATCH", "/api/auth/me", p, nil)
+}
+
+// GetCar возвращает полный JSON авто как map — чтобы при частичном
+// редактировании переслать все поля обратно (PATCH перезаписывает их целиком).
+func (c *Client) GetCar(ctx context.Context, userID uuid.UUID, carID string) (map[string]any, error) {
+	var m map[string]any
+	if err := c.doAuthed(ctx, userID, "GET", "/api/cars/"+carID, nil, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *Client) UpdateCar(ctx context.Context, userID uuid.UUID, carID string, body map[string]any) error {
+	return c.doAuthed(ctx, userID, "PATCH", "/api/cars/"+carID, body, nil)
+}
+
+// RecordBrief — краткая запись для списков/редактирования.
+type RecordBrief struct {
+	ID    string   `json:"id"`
+	Type  string   `json:"type"`
+	Title string   `json:"title"`
+	Date  string   `json:"date"`
+	Cost  *float64 `json:"cost"`
+}
+
+func (c *Client) ListRecords(ctx context.Context, userID uuid.UUID, carID string) ([]RecordBrief, error) {
+	var recs []RecordBrief
+	if err := c.doAuthed(ctx, userID, "GET", "/api/cars/"+carID+"/records", nil, &recs); err != nil {
+		return nil, err
+	}
+	return recs, nil
+}
+
+func (c *Client) UpdateRecord(ctx context.Context, userID uuid.UUID, recordID string, body map[string]any) error {
+	return c.doAuthed(ctx, userID, "PATCH", "/api/records/"+recordID, body, nil)
+}
+
+func (c *Client) DeleteRecord(ctx context.Context, userID uuid.UUID, recordID string) error {
+	return c.doAuthed(ctx, userID, "DELETE", "/api/records/"+recordID, nil, nil)
+}
+
 // Chat отправляет сообщение пользователя в /api/chat от его имени.
 func (c *Client) Chat(ctx context.Context, userID uuid.UUID, carID, message string) (*ChatResult, error) {
 	token, err := c.mintToken(userID)

@@ -7,8 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// userCols — общий список колонок; country/region/currency могут быть NULL, поэтому COALESCE.
-const userCols = "id, email, password_hash, name, COALESCE(country,''), COALESCE(region,''), COALESCE(currency,''), created_at"
+// userCols — общий список колонок. У мессенджер-пользователей email/name/
+// password_hash могут быть NULL, поэтому всё текстовое заворачиваем в COALESCE
+// (иначе scan NULL→string падает и юзер «не находится»).
+const userCols = "id, COALESCE(email,''), COALESCE(password_hash,''), COALESCE(name,''), COALESCE(country,''), COALESCE(region,''), COALESCE(currency,''), created_at"
 
 func scanUser(row interface {
 	Scan(dest ...any) error

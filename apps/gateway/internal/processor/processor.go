@@ -59,6 +59,20 @@ func (p *Processor) Process(ctx context.Context, in model.IncomingMessage) []mod
 			return p.handleCar(ctx, in, uid)
 		case "/passport":
 			return p.handlePassport(in)
+		case "/profile":
+			return p.handleProfile(ctx, in, uid)
+		case "/set":
+			return p.handleSet(ctx, in, uid, args)
+		case "/editcar":
+			return p.handleEditCar(ctx, in, uid, args)
+		case "/setnumber":
+			return p.handleSetCarField(ctx, in, uid, "reg_number", args)
+		case "/setmileage":
+			return p.handleSetCarField(ctx, in, uid, "mileage", args)
+		case "/del":
+			return p.handleDelRecord(ctx, in, uid, args)
+		case "/setcost":
+			return p.handleSetCost(ctx, in, uid, args)
 		default:
 			return []model.OutgoingMessage{reply(in.ChatID, "Неизвестная команда. /help — список команд.", "")}
 		}
@@ -110,6 +124,14 @@ func (p *Processor) handleHelp(in model.IncomingMessage) []model.OutgoingMessage
 /passport — PDF паспорт авто
 /car — переключить автомобиль
 /help — эта справка
+
+✏️ Редактирование:
+/profile — профиль; /set <поле> <значение>
+/editcar марка модель [год] [пробег]
+/setnumber 1234 AB-7 — гос. номер
+/setmileage 50000 — пробег
+/del N — удалить N-ю запись из /history
+/setcost N сумма — задать стоимость записи
 
 💬 Просто напишите о обслуживании — я сохраню:
 • "заменил масло 10w40, пробег 87500, 3800₽"
@@ -211,6 +233,191 @@ func (p *Processor) handleCar(ctx context.Context, in model.IncomingMessage, uid
 func (p *Processor) handlePassport(in model.IncomingMessage) []model.OutgoingMessage {
 	return []model.OutgoingMessage{reply(in.ChatID,
 		"📄 PDF-паспорт доступен в веб-версии.\n\nСсылка: garagebrain.yourdomain.com", "")}
+}
+
+func (p *Processor) handleProfile(ctx context.Context, in model.IncomingMessage, uid uuid.UUID) []model.OutgoingMessage {
+	pr, err := p.backend.GetProfile(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось получить профиль.", "")}
+	}
+	text := fmt.Sprintf("👤 *Профиль*\n\nИмя: %s\nСтрана: %s\nРегион: %s\nВалюта: %s\n\n"+
+		"Изменить:\n`/set имя Иван`\n`/set валюта BYN`\n`/set страна BY`\n`/set регион Минск`",
+		dash(pr.Name), dash(pr.Country), dash(pr.Region), dash(pr.Currency))
+	return []model.OutgoingMessage{reply(in.ChatID, text, "Markdown")}
+}
+
+func (p *Processor) handleSet(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	if len(args) < 2 {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /set <поле> <значение>\nПоля: имя, валюта, страна, регион", "")}
+	}
+	field := strings.ToLower(args[0])
+	value := strings.Join(args[1:], " ")
+
+	pr, err := p.backend.GetProfile(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось получить профиль.", "")}
+	}
+	switch field {
+	case "имя", "name":
+		pr.Name = value
+	case "валюта", "currency":
+		pr.Currency = strings.ToUpper(value)
+	case "страна", "country":
+		pr.Country = strings.ToUpper(value)
+	case "регион", "region":
+		pr.Region = value
+	default:
+		return []model.OutgoingMessage{reply(in.ChatID, "Неизвестное поле. Доступно: имя, валюта, страна, регион", "")}
+	}
+	if err := p.backend.UpdateProfile(ctx, uid, *pr); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось сохранить.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, "✅ Профиль обновлён.", "")}
+}
+
+func (p *Processor) handleEditCar(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	if len(args) < 2 {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /editcar марка модель [год] [пробег]", "")}
+	}
+	car, err := db.GetActiveCar(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "🚗 Нет активного авто. /add марка модель год пробег", "")}
+	}
+	m, err := p.backend.GetCar(ctx, uid, car.ID)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось получить авто.", "")}
+	}
+	m["brand"] = args[0]
+	m["model"] = args[1]
+	if len(args) >= 3 {
+		if y, err := strconv.Atoi(args[2]); err == nil {
+			m["year"] = y
+		}
+	}
+	if len(args) >= 4 {
+		if km, err := strconv.Atoi(args[3]); err == nil {
+			m["mileage"] = km
+		}
+	}
+	if err := p.backend.UpdateCar(ctx, uid, car.ID, m); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось сохранить авто.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, "✅ Данные авто обновлены.", "")}
+}
+
+// handleSetCarField меняет одно поле активного авто (reg_number / mileage),
+// переслав остальные поля без изменений.
+func (p *Processor) handleSetCarField(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, field string, args []string) []model.OutgoingMessage {
+	if len(args) < 1 {
+		hint := map[string]string{"reg_number": "/setnumber 1234 AB-7", "mileage": "/setmileage 50000"}[field]
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: "+hint, "")}
+	}
+	car, err := db.GetActiveCar(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "🚗 Нет активного авто.", "")}
+	}
+	m, err := p.backend.GetCar(ctx, uid, car.ID)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось получить авто.", "")}
+	}
+	if field == "mileage" {
+		km, err := strconv.Atoi(strings.TrimSpace(args[0]))
+		if err != nil {
+			return []model.OutgoingMessage{reply(in.ChatID, "Пробег — число, напр. /setmileage 50000", "")}
+		}
+		m["mileage"] = km
+	} else {
+		m[field] = strings.Join(args, " ")
+	}
+	if err := p.backend.UpdateCar(ctx, uid, car.ID, m); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось сохранить.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, "✅ Сохранено.", "")}
+}
+
+// pickRecord достаёт N-ю (1-based) запись из списка последних записей авто.
+func (p *Processor) pickRecord(ctx context.Context, uid uuid.UUID, carID string, n int) (*backend.RecordBrief, error) {
+	recs, err := p.backend.ListRecords(ctx, uid, carID)
+	if err != nil {
+		return nil, err
+	}
+	if n < 1 || n > len(recs) {
+		return nil, fmt.Errorf("out of range")
+	}
+	return &recs[n-1], nil
+}
+
+func (p *Processor) handleDelRecord(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	n, ok := parseIndex(args)
+	if !ok {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /del N — удалить N-ю запись из /history", "")}
+	}
+	car, err := db.GetActiveCar(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "🚗 Нет активного авто.", "")}
+	}
+	rec, err := p.pickRecord(ctx, uid, car.ID, n)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "Запись №"+args[0]+" не найдена. Список — /history", "")}
+	}
+	if err := p.backend.DeleteRecord(ctx, uid, rec.ID); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось удалить.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, "🗑 Удалено: "+rec.Title, "")}
+}
+
+func (p *Processor) handleSetCost(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	if len(args) < 2 {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /setcost N сумма — задать стоимость N-й записи", "")}
+	}
+	n, ok := parseIndex(args[:1])
+	amount, err := strconv.ParseFloat(strings.ReplaceAll(args[1], ",", "."), 64)
+	if !ok || err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /setcost N сумма (числа)", "")}
+	}
+	car, err := db.GetActiveCar(ctx, uid)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "🚗 Нет активного авто.", "")}
+	}
+	rec, err := p.pickRecord(ctx, uid, car.ID, n)
+	if err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "Запись не найдена. Список — /history", "")}
+	}
+	body := map[string]any{
+		"type":  rec.Type,
+		"title": rec.Title,
+		"date":  safeDate(rec.Date),
+		"cost":  amount,
+	}
+	if err := p.backend.UpdateRecord(ctx, uid, rec.ID, body); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "❌ Не удалось сохранить.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, fmt.Sprintf("✅ «%s»: стоимость %.2f", rec.Title, amount), "")}
+}
+
+func parseIndex(args []string) (int, bool) {
+	if len(args) < 1 {
+		return 0, false
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(args[0]))
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
+func safeDate(s string) string {
+	if len(s) >= 10 {
+		return s[:10]
+	}
+	return s
+}
+
+func dash(s string) string {
+	if s == "" {
+		return "—"
+	}
+	return s
 }
 
 func (p *Processor) handleFreeText(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, text string) []model.OutgoingMessage {
