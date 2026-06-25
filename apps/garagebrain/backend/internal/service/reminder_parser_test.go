@@ -77,3 +77,23 @@ func TestParseRecordOmittedFieldsAreNil(t *testing.T) {
 		t.Errorf("mileage should be nil, got %v", *res.Record.Mileage)
 	}
 }
+
+func TestParseRecordCurrency(t *testing.T) {
+	cases := map[string]string{
+		"Стоимость: 3500 BYN": "BYN",
+		"Стоимость: $50":      "USD",
+		"Стоимость: 20€":      "EUR",
+		"Стоимость: 3000 ₽":   "RUB",
+		"Стоимость: 1000":     "",
+	}
+	for costLine, want := range cases {
+		text := "---ЗАПИСЬ---\nТип: service\nОписание: X\nДата: 10.06.2026\n" + costLine + "\n---КОНЕЦ---\nok"
+		got := ParseAIResponse(text)
+		if got.Record == nil {
+			t.Fatalf("no record for %q", costLine)
+		}
+		if got.Record.Currency != want {
+			t.Errorf("%q -> currency %q, want %q", costLine, got.Record.Currency, want)
+		}
+	}
+}

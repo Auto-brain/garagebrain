@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/auto-brain/garagebrain/internal/db"
+	"github.com/auto-brain/garagebrain/internal/middleware"
 	"github.com/auto-brain/garagebrain/internal/model"
 	"github.com/auto-brain/garagebrain/internal/prompt"
 	"github.com/auto-brain/garagebrain/internal/service"
@@ -78,6 +79,12 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 
 		if parsed.Type == "record" && parsed.Record.Title != "" {
 			createReq := createRecordFromParsed(carID, parsed.Record)
+			// Валюта записи: из текста, иначе валюта пользователя по умолчанию.
+			if createReq.Currency == "" {
+				if u, err := db.GetUserByID(r.Context(), middleware.GetUserID(r.Context())); err == nil {
+					createReq.Currency = u.Currency
+				}
+			}
 			if _, err := db.CreateRecord(r.Context(), createReq); err == nil {
 				// Пробег двигаем только вперёд (запись может быть задним числом).
 				if parsed.Record.Mileage != nil && *parsed.Record.Mileage > car.Mileage {
@@ -105,12 +112,13 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 
 func createRecordFromParsed(carID uuid.UUID, rec *service.ParsedRecord) model.CreateRecordRequest {
 	return model.CreateRecordRequest{
-		CarID:   carID,
-		Type:    rec.Type,
-		Title:   rec.Title,
-		Date:    rec.Date.Format("2006-01-02"),
-		Mileage: rec.Mileage,
-		Cost:    intToFloatPtr(rec.Cost),
+		CarID:    carID,
+		Type:     rec.Type,
+		Title:    rec.Title,
+		Date:     rec.Date.Format("2006-01-02"),
+		Mileage:  rec.Mileage,
+		Cost:     intToFloatPtr(rec.Cost),
+		Currency: rec.Currency,
 	}
 }
 

@@ -22,6 +22,7 @@ type ParsedRecord struct {
 	Mileage    *int
 	Cost       *int
 	Liters     *float64
+	Currency   string
 	NextAction string
 }
 
@@ -48,6 +49,12 @@ func parseRecord(text string) ParsedResponse {
 	}
 
 	fields := parseFields(match[1])
+
+	// Валюта: из явного поля «Валюта» либо из символа/кода в строке стоимости.
+	currency := detectCurrency(fields["Валюта"])
+	if currency == "" {
+		currency = detectCurrency(fields["Стоимость"])
+	}
 
 	// Стоимость/пробег/литры остаются nil, если AI их не указал —
 	// иначе 0 искажает статистику и расход топлива.
@@ -83,6 +90,7 @@ func parseRecord(text string) ParsedResponse {
 		Mileage:    mileage,
 		Cost:       cost,
 		Liters:     liters,
+		Currency:   currency,
 		NextAction: fields["Следующее"],
 	}
 
@@ -110,6 +118,32 @@ func parseFields(text string) map[string]string {
 		}
 	}
 	return fields
+}
+
+// detectCurrency распознаёт код/символ валюты в строке (BYN/$/€/₽/₴/₸/zł/руб…).
+func detectCurrency(s string) string {
+	u := strings.ToUpper(s)
+	codes := []string{"BYN", "USD", "EUR", "RUB", "UAH", "KZT", "PLN"}
+	for _, c := range codes {
+		if strings.Contains(u, c) {
+			return c
+		}
+	}
+	switch {
+	case strings.Contains(s, "₽") || strings.Contains(u, "РУБ"):
+		return "RUB"
+	case strings.Contains(s, "$"):
+		return "USD"
+	case strings.Contains(s, "€"):
+		return "EUR"
+	case strings.Contains(s, "₴") || strings.Contains(u, "ГРН"):
+		return "UAH"
+	case strings.Contains(s, "₸") || strings.Contains(u, "ТГ"):
+		return "KZT"
+	case strings.Contains(s, "ZŁ") || strings.Contains(u, "ZL"):
+		return "PLN"
+	}
+	return ""
 }
 
 func normalizeType(t string) string {
