@@ -8,6 +8,7 @@ export default function HistorySidebar({ car, currency, onChanged, refreshKey })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(false);
 
   const reload = useCallback(() => {
     if (!car) return;
@@ -26,11 +27,20 @@ export default function HistorySidebar({ car, currency, onChanged, refreshKey })
 
   if (!car) return null;
 
-  const afterChange = () => { setEditing(null); reload(); if (onChanged) onChanged(); };
+  const afterChange = () => { setEditing(null); setAdding(false); reload(); if (onChanged) onChanged(); };
 
   return (
     <div className="max-w-3xl w-full mx-auto p-4">
-      <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">История обслуживания</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">История обслуживания</h2>
+        <button
+          onClick={() => setAdding(true)}
+          title="Добавить запись"
+          className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+        >
+          + Запись
+        </button>
+      </div>
 
       {loading ? (
         <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">Загрузка...</div>
@@ -58,6 +68,14 @@ export default function HistorySidebar({ car, currency, onChanged, refreshKey })
           onSaved={afterChange}
         />
       )}
+      {adding && (
+        <EditRecordModal
+          carId={car.id}
+          defaultCurrency={currency}
+          onClose={() => setAdding(false)}
+          onSaved={afterChange}
+        />
+      )}
     </div>
   );
 }
@@ -71,10 +89,11 @@ const TYPES = [
 
 const CURRENCIES = ['USD', 'EUR', 'BYN', 'RUB', 'UAH', 'KZT'];
 
-function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
+function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved }) {
+  const isNew = !record.id;
   const [type, setType] = useState(record.type || 'service');
   const [title, setTitle] = useState(record.title || '');
-  const [date, setDate] = useState((record.date || '').slice(0, 10));
+  const [date, setDate] = useState((record.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10));
   const [mileage, setMileage] = useState(record.mileage ?? '');
   const [cost, setCost] = useState(record.cost ?? '');
   const [costCurrency, setCostCurrency] = useState(record.currency || defaultCurrency || '');
@@ -87,17 +106,19 @@ function EditRecordModal({ record, defaultCurrency, onClose, onSaved }) {
     if (!title || !date) { setError('Описание и дата обязательны'); return; }
     setBusy(true);
     setError('');
+    const payload = {
+      type,
+      title,
+      date,
+      mileage: mileage === '' ? null : parseInt(mileage, 10),
+      cost: cost === '' ? null : parseFloat(cost),
+      currency: costCurrency,
+      parts_cost: partsCost === '' ? null : parseFloat(partsCost),
+      parts_currency: partsCurrency,
+    };
     try {
-      await api.updateRecord(record.id, {
-        type,
-        title,
-        date,
-        mileage: mileage === '' ? null : parseInt(mileage, 10),
-        cost: cost === '' ? null : parseFloat(cost),
-        currency: costCurrency,
-        parts_cost: partsCost === '' ? null : parseFloat(partsCost),
-        parts_currency: partsCurrency,
-      });
+      if (isNew) await api.createRecord({ car_id: carId, ...payload });
+      else await api.updateRecord(record.id, payload);
       onSaved();
     } catch (e) {
       setError(e.message || 'Не удалось сохранить');

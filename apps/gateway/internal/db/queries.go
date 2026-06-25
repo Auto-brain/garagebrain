@@ -208,7 +208,8 @@ func CreateCarFromBot(ctx context.Context, userID uuid.UUID, brand, model string
 
 func GetLatestRecords(ctx context.Context, carID string, limit int) ([]RecordRow, error) {
 	rows, err := Pool.Query(ctx,
-		`SELECT type, title, date, mileage, cost FROM service_records WHERE car_id = $1 ORDER BY date DESC LIMIT $2`,
+		`SELECT type, title, to_char(date, 'DD.MM.YYYY'), mileage, COALESCE(cost, 0) + COALESCE(parts_cost, 0)
+		 FROM service_records WHERE car_id = $1 ORDER BY date DESC LIMIT $2`,
 		carID, limit,
 	)
 	if err != nil {
@@ -233,7 +234,7 @@ type RecordRow struct {
 	Title   string
 	Date    string
 	Mileage *int
-	Cost    *int
+	Cost    *float64 // service_records.cost — NUMERIC(14,2)
 }
 
 // GetDueTelegramReminders возвращает сработавшие напоминания только для

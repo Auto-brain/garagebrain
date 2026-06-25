@@ -106,6 +106,12 @@ export const api = {
   getRecords: (carId, type = '') =>
     request(`/cars/${carId}/records?type=${type}`),
 
+  createRecord: (data) =>
+    request('/records', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   updateRecord: (id, data) =>
     request(`/records/${id}`, {
       method: 'PATCH',

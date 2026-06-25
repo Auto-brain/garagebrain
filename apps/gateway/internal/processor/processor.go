@@ -149,8 +149,8 @@ func (p *Processor) handleHistory(ctx context.Context, in model.IncomingMessage,
 	text := fmt.Sprintf("📋 *История %s %s*\n\n", car.Brand, car.Model)
 	for _, r := range records {
 		cost := "—"
-		if r.Cost != nil {
-			cost = fmt.Sprintf("%d₽", *r.Cost)
+		if r.Cost != nil && *r.Cost > 0 {
+			cost = fmt.Sprintf("%.2f", *r.Cost)
 		}
 		text += fmt.Sprintf("%s %s | %s | %s\n", typeEmoji[r.Type], r.Date, r.Title, cost)
 	}
