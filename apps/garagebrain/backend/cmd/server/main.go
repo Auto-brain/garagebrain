@@ -35,7 +35,11 @@ func main() {
 	storageSvc := service.NewStorage()
 	handler.InitUploadHandler(storageSvc)
 
+	currencySvc := service.NewCurrencyService()
+	handler.InitCurrencyHandler(currencySvc)
+
 	go job.StartReminderJob(pushSvc)
+	go job.StartCurrencyJob(currencySvc)
 
 	r := chi.NewRouter()
 
@@ -75,6 +79,7 @@ func main() {
 			r.Post("/fuel", handler.CreateFuel)
 			r.Post("/upload", handler.UploadPhoto)
 			r.Post("/link/telegram/start", handler.StartTelegramLink)
+			r.Get("/rates", handler.GetRates)
 			r.Get("/push/vapid", handler.VapidKey)
 			r.Post("/push/subscribe", handler.SubscribePush)
 		})

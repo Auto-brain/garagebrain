@@ -103,6 +103,14 @@ CREATE TABLE IF NOT EXISTS account_link_tokens (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Курсы валют (база USD): rate = сколько единиц валюты за 1 USD.
+-- Обновляется плановым джобом 2 раза в сутки из открытого API.
+CREATE TABLE IF NOT EXISTS currency_rates (
+  quote TEXT PRIMARY KEY,
+  rate NUMERIC NOT NULL,
+  fetched_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS fuel_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
