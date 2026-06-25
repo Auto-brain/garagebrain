@@ -174,6 +174,13 @@ func (c *Client) CreateLinkCode(ctx context.Context, userID uuid.UUID) (string, 
 	return out.Code, nil
 }
 
+// AcceptCarInvite принимает код приглашения в авто от имени пользователя
+// (бот: /join <code> или /start join_<code>). Бэкенд — единственный источник
+// бизнес-логики, шлюз только проксирует.
+func (c *Client) AcceptCarInvite(ctx context.Context, userID uuid.UUID, code string) error {
+	return c.doAuthed(ctx, userID, "POST", "/api/cars/join", map[string]string{"code": code}, nil)
+}
+
 func (c *Client) UpdateRecord(ctx context.Context, userID uuid.UUID, recordID string, body map[string]any) error {
 	return c.doAuthed(ctx, userID, "PATCH", "/api/records/"+recordID, body, nil)
 }

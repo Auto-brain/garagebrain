@@ -159,6 +159,27 @@ export const api = {
     });
   },
 
+  // Участники авто (совместный доступ, TODO #6).
+  getMembers: (carId) => request(`/cars/${carId}/members`),
+
+  inviteMember: (carId, role) =>
+    request(`/cars/${carId}/members/invite`, {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    }),
+
+  removeMember: (carId, userId) =>
+    request(`/cars/${carId}/members/${userId}`, { method: 'DELETE' }),
+
+  changeMemberRole: (carId, userId, role) =>
+    request(`/cars/${carId}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  joinCar: (code) =>
+    request('/cars/join', { method: 'POST', body: JSON.stringify({ code }) }),
+
   getVapidKey: () => request('/push/vapid'),
 
   // Старт связывания с Telegram (Вариант A): возвращает { token, deep_link }.

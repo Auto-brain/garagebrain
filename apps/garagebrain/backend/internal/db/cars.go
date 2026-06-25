@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strings"
 
 	"github.com/auto-brain/garagebrain/internal/model"
 	"github.com/google/uuid"
@@ -9,6 +10,16 @@ import (
 
 // carCols / scanCar — единый список колонок и разбор строки авто.
 const carCols = "id, user_id, brand, model, year, vin, reg_number, color, engine, drive, mileage, bought_date, bought_price, photo_url, is_active, created_at"
+
+// prefixCols добавляет alias-префикс к каждой колонке из списка (для JOIN-ов),
+// чтобы не дублировать carCols с алиасом таблицы.
+func prefixCols(cols, prefix string) string {
+	parts := strings.Split(cols, ", ")
+	for i := range parts {
+		parts[i] = prefix + parts[i]
+	}
+	return strings.Join(parts, ", ")
+}
 
 func scanCar(row interface {
 	Scan(dest ...any) error
@@ -20,7 +31,13 @@ func scanCar(row interface {
 }
 
 func CreateCar(ctx context.Context, userID uuid.UUID, req model.CreateCarRequest) (*model.Car, error) {
-	c, err := scanCar(Pool.QueryRow(ctx,
+	tx, err := Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	c, err := scanCar(tx.QueryRow(ctx,
 		`INSERT INTO cars (user_id, brand, model, year, vin, reg_number, color, engine, drive, mileage, bought_date, bought_price, photo_url)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		 RETURNING `+carCols,
@@ -30,12 +47,31 @@ func CreateCar(ctx context.Context, userID uuid.UUID, req model.CreateCarRequest
 	if err != nil {
 		return nil, err
 	}
+
+	// Создатель авто — владелец (owner).
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO car_members (car_id, user_id, role, invited_by) VALUES ($1, $2, 'owner', $2)`,
+		c.ID, userID,
+	); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
 	return &c, nil
 }
 
+// GetCarsByUser возвращает авто, в которых пользователь — участник (любая роль),
+// а не только владелец. Аренда с истёкшим expires_at не учитывается.
 func GetCarsByUser(ctx context.Context, userID uuid.UUID) ([]model.Car, error) {
 	rows, err := Pool.Query(ctx,
-		"SELECT "+carCols+" FROM cars WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC",
+		`SELECT `+prefixCols(carCols, "c.")+`
+		 FROM cars c
+		 JOIN car_members cm ON cm.car_id = c.id
+		 WHERE cm.user_id = $1 AND c.is_active = true
+		   AND (cm.expires_at IS NULL OR cm.expires_at > now())
+		 ORDER BY c.created_at DESC`,
 		userID,
 	)
 	if err != nil {

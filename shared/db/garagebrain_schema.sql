@@ -103,6 +103,39 @@ CREATE TABLE IF NOT EXISTS account_link_tokens (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Совместный доступ к авто несколькими аккаунтами (TODO #6).
+-- Один автомобиль ↔ много пользователей с ролями:
+--   owner  — полный доступ (удаление авто, управление участниками);
+--   driver — добавлять записи/заправки/напоминания;
+--   renter — то же, но доступ истекает по expires_at (аренда);
+--   viewer — только чтение.
+-- Бэкфилл (см. migrations/0001_car_members.sql) создаёт owner-запись для
+-- каждого существующего cars.user_id.
+CREATE TABLE IF NOT EXISTS car_members (
+  car_id UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'driver',
+  invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ,
+  PRIMARY KEY (car_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_car_members_user ON car_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_car_members_car ON car_members(car_id);
+
+-- Инвайты на доступ к авто (одноразовый код, как account_link_tokens).
+-- Владелец генерит код на (car_id, role); приглашённый принимает его на вебе
+-- или в боте (/start join_<code>) → создаётся car_members.
+CREATE TABLE IF NOT EXISTS car_invites (
+  code TEXT PRIMARY KEY,
+  car_id UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'driver',
+  invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Курсы валют (база USD): rate = сколько единиц валюты за 1 USD.
 -- Обновляется плановым джобом 2 раза в сутки из открытого API.
 CREATE TABLE IF NOT EXISTS currency_rates (

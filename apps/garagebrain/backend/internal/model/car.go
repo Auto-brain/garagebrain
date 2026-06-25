@@ -44,6 +44,16 @@ type UpdateMileageRequest struct {
 	Mileage int `json:"mileage"`
 }
 
+// CarMember — участник авто (для списка «Участники авто»).
+type CarMember struct {
+	UserID    uuid.UUID  `json:"user_id"`
+	Name      string     `json:"name"`
+	Email     string     `json:"email"`
+	Role      string     `json:"role"`
+	CreatedAt time.Time  `json:"created_at"`
+	ExpiresAt *time.Time `json:"expires_at"`
+}
+
 type UpdateCarRequest struct {
 	Brand     string  `json:"brand"`
 	Model     string  `json:"model"`

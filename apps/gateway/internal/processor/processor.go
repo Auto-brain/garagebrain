@@ -57,6 +57,8 @@ func (p *Processor) Process(ctx context.Context, in model.IncomingMessage) []mod
 			return p.handleReminders(in)
 		case "/link":
 			return p.handleLink(ctx, in, uid)
+		case "/join":
+			return p.handleJoin(ctx, in, uid, args)
 		case "/car":
 			return p.handleCar(ctx, in, uid)
 		case "/passport":
@@ -87,6 +89,10 @@ func (p *Processor) handleStart(ctx context.Context, in model.IncomingMessage, u
 	// Deep-link связывания аккаунтов: /start link_<token> (Вариант A).
 	if len(args) > 0 && strings.HasPrefix(args[0], "link_") {
 		return p.handleAccountLink(ctx, in, strings.TrimPrefix(args[0], "link_"))
+	}
+	// Deep-link приглашения в авто: /start join_<code> (TODO #6).
+	if len(args) > 0 && strings.HasPrefix(args[0], "join_") {
+		return p.handleJoin(ctx, in, uid, []string{strings.TrimPrefix(args[0], "join_")})
 	}
 
 	cars, _ := db.GetUserCars(ctx, uid)
@@ -135,6 +141,7 @@ func (p *Processor) handleHelp(in model.IncomingMessage) []model.OutgoingMessage
 /del N — удалить N-ю запись из /history
 /setcost N сумма — задать стоимость записи
 /link — код для привязки к веб-аккаунту
+/join код — присоединиться к авто по приглашению
 
 💬 Просто напишите о обслуживании — я сохраню:
 • "заменил масло 10w40, пробег 87500, 3800₽"
@@ -221,6 +228,19 @@ func (p *Processor) handleLink(ctx context.Context, in model.IncomingMessage, ui
 	}
 	text := fmt.Sprintf("🔗 Код привязки: *%s*\n\nВойдите на сайте под своим аккаунтом, откройте настройки и введите этот код в поле «Привязать Telegram». Код действует 10 минут.", code)
 	return []model.OutgoingMessage{reply(in.ChatID, text, "Markdown")}
+}
+
+// handleJoin принимает код приглашения в авто (/join <code> или
+// /start join_<code>) → бэкенд добавляет Telegram-пользователя в участники.
+func (p *Processor) handleJoin(ctx context.Context, in model.IncomingMessage, uid uuid.UUID, args []string) []model.OutgoingMessage {
+	if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
+		return []model.OutgoingMessage{reply(in.ChatID, "Формат: /join <код>\n\nКод приглашения выдаёт владелец авто.", "")}
+	}
+	code := strings.TrimSpace(args[0])
+	if err := p.backend.AcceptCarInvite(ctx, uid, code); err != nil {
+		return []model.OutgoingMessage{reply(in.ChatID, "⚠️ Код неверный или устарел. Попросите владельца выдать новый.", "")}
+	}
+	return []model.OutgoingMessage{reply(in.ChatID, "✅ Доступ к авто получен! Откройте /car — авто теперь в вашем списке.", "")}
 }
 
 func (p *Processor) handleReminders(in model.IncomingMessage) []model.OutgoingMessage {

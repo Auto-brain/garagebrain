@@ -138,10 +138,17 @@ func GetOrCreateUser(ctx context.Context, platform, platformID, username, displa
 	return userID, nil
 }
 
+// GetActiveCar возвращает активное авто, в котором пользователь — участник
+// (любая роль), а не только владелец (TODO #6: совместный доступ).
 func GetActiveCar(ctx context.Context, userID uuid.UUID) (*ActiveCar, error) {
 	var car ActiveCar
 	err := Pool.QueryRow(ctx,
-		`SELECT id, brand, model, year, mileage FROM cars WHERE user_id = $1 AND is_active = true LIMIT 1`,
+		`SELECT c.id, c.brand, c.model, c.year, c.mileage
+		 FROM cars c
+		 JOIN car_members cm ON cm.car_id = c.id
+		 WHERE cm.user_id = $1 AND c.is_active = true
+		   AND (cm.expires_at IS NULL OR cm.expires_at > now())
+		 ORDER BY c.created_at DESC LIMIT 1`,
 		userID,
 	).Scan(&car.ID, &car.Brand, &car.Model, &car.Year, &car.Mileage)
 	if err != nil {
@@ -158,9 +165,15 @@ type ActiveCar struct {
 	Mileage int
 }
 
+// GetUserCars возвращает авто, в которых пользователь — участник (TODO #6).
 func GetUserCars(ctx context.Context, userID uuid.UUID) ([]ActiveCar, error) {
 	rows, err := Pool.Query(ctx,
-		`SELECT id, brand, model, year, mileage FROM cars WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC`,
+		`SELECT c.id, c.brand, c.model, c.year, c.mileage
+		 FROM cars c
+		 JOIN car_members cm ON cm.car_id = c.id
+		 WHERE cm.user_id = $1 AND c.is_active = true
+		   AND (cm.expires_at IS NULL OR cm.expires_at > now())
+		 ORDER BY c.created_at DESC`,
 		userID,
 	)
 	if err != nil {
@@ -190,8 +203,14 @@ func GetUserCarCount(ctx context.Context, userID uuid.UUID) (int, error) {
 }
 
 func CreateCarFromBot(ctx context.Context, userID uuid.UUID, brand, model string, year *int, mileage int) (string, error) {
+	tx, err := Pool.Begin(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback(ctx)
+
 	var carID string
-	err := Pool.QueryRow(ctx,
+	err = tx.QueryRow(ctx,
 		`INSERT INTO cars (user_id, brand, model, year, mileage) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
 		userID, brand, model, year, mileage,
 	).Scan(&carID)
@@ -199,11 +218,25 @@ func CreateCarFromBot(ctx context.Context, userID uuid.UUID, brand, model string
 		return "", err
 	}
 
-	_, err = Pool.Exec(ctx,
+	// Создатель авто — владелец (owner) — для membership-доступа (TODO #6).
+	if _, err = tx.Exec(ctx,
+		`INSERT INTO car_members (car_id, user_id, role, invited_by) VALUES ($1, $2, 'owner', $2)`,
+		carID, userID,
+	); err != nil {
+		return "", err
+	}
+
+	if _, err = tx.Exec(ctx,
 		"UPDATE cars SET is_active = false WHERE user_id = $1 AND id != $2",
 		userID, carID,
-	)
-	return carID, err
+	); err != nil {
+		return "", err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return "", err
+	}
+	return carID, nil
 }
 
 func GetLatestRecords(ctx context.Context, carID string, limit int) ([]RecordRow, error) {

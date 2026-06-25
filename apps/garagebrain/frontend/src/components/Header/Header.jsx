@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../lib/api.js';
 import { getTheme, toggleTheme } from '../../lib/theme.js';
 import { t, LANGS } from '../../lib/i18n.js';
+import CarMembers from '../Car/CarMembers.jsx';
 
 export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate, onCarUpdate }) {
   const [showCars, setShowCars] = useState(false);
@@ -136,6 +137,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
     {editCar && selectedCar && (
       <EditCarModal
         car={selectedCar}
+        currentUserId={user?.id}
         onClose={() => setEditCar(false)}
         onSaved={(c) => { if (onCarUpdate) onCarUpdate(c); setEditCar(false); }}
       />
@@ -144,7 +146,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
   );
 }
 
-function EditCarModal({ car, onClose, onSaved }) {
+function EditCarModal({ car, currentUserId, onClose, onSaved }) {
   const [brand, setBrand] = useState(car.brand || '');
   const [model, setModel] = useState(car.model || '');
   const [year, setYear] = useState(car.year ?? '');
@@ -181,7 +183,7 @@ function EditCarModal({ car, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">{t('editCar')}</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
@@ -215,6 +217,9 @@ function EditCarModal({ car, onClose, onSaved }) {
             <span className={labelCls}>{t('vin')}</span>
             <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} className={`mt-1 ${inputCls}`} />
           </label>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+          <CarMembers car={car} currentUserId={currentUserId} />
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} disabled={busy}
@@ -255,6 +260,19 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
   const [error, setError] = useState('');
   const [linkCode, setLinkCode] = useState('');
   const [linkMsg, setLinkMsg] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [joinMsg, setJoinMsg] = useState('');
+
+  const join = async () => {
+    setJoinMsg('');
+    try {
+      await api.joinCar(joinCode.trim());
+      setJoinMsg('✅ ' + t('joined'));
+      setJoinCode('');
+    } catch (e) {
+      setJoinMsg('⚠️ ' + (e.message || ''));
+    }
+  };
 
   const confirmLink = async () => {
     setLinkMsg('');
@@ -351,6 +369,21 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
               </button>
             </div>
             {linkMsg && <p className="text-xs mt-1 text-gray-600 dark:text-gray-300">{linkMsg}</p>}
+          </div>
+          <div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('joinByCode')}</span>
+            <div className="flex gap-2 mt-1">
+              <input
+                type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value)}
+                placeholder={t('joinPlaceholder')}
+                className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button onClick={join} disabled={!joinCode.trim()}
+                className="px-4 py-3 rounded-lg bg-blue-50 text-blue-600 dark:bg-slate-700 dark:text-blue-400 font-medium hover:bg-blue-100 dark:hover:bg-slate-600 transition disabled:opacity-50">
+                {t('joinBtn')}
+              </button>
+            </div>
+            {joinMsg && <p className="text-xs mt-1 text-gray-600 dark:text-gray-300">{joinMsg}</p>}
           </div>
         </div>
         <div className="flex gap-3 mt-6">
