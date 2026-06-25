@@ -126,7 +126,7 @@ func (p *Processor) handleHelp(in model.IncomingMessage) []model.OutgoingMessage
 /help — эта справка
 
 ✏️ Редактирование:
-/profile — профиль; /set <поле> <значение>
+/profile — профиль; /set поле значение
 /editcar марка модель [год] [пробег]
 /setnumber 1234 AB-7 — гос. номер
 /setmileage 50000 — пробег
