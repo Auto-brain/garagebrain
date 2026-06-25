@@ -6,6 +6,7 @@ import HistorySidebar from './components/Sidebar/HistorySidebar.jsx';
 import StatusBar from './components/Layout/StatusBar.jsx';
 import ExpenseChart from './components/Stats/ExpenseChart.jsx';
 import PassportCard from './components/Car/PassportCard.jsx';
+import { setLanguage, langFromCountry, t } from './lib/i18n.js';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -89,6 +90,9 @@ export default function App() {
     setSelectedCar((prev) => (prev && prev.id === updated.id ? updated : prev));
   };
 
+  // Язык: из профиля, иначе по стране, иначе ru. Ставим до рендера детей.
+  setLanguage(user?.language || langFromCountry(user?.country) || 'ru');
+
   if (view === 'auth') {
     return <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />;
   }
@@ -112,14 +116,14 @@ export default function App() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {selectedCar && (
             <div className="flex gap-1 px-4 pt-2 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
-              <TabButton active={mainView === 'records'} onClick={() => setMainView('records')}>Записи</TabButton>
-              <TabButton active={mainView === 'stats'} onClick={() => setMainView('stats')}>Статистика</TabButton>
+              <TabButton active={mainView === 'records'} onClick={() => setMainView('records')}>{t('records')}</TabButton>
+              <TabButton active={mainView === 'stats'} onClick={() => setMainView('stats')}>{t('stats')}</TabButton>
               {!chatOpen && (
                 <button
                   onClick={toggleChat}
                   className="ml-auto mb-1 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
                 >
-                  💬 Чат
+                  💬 {t('chat')}
                 </button>
               )}
             </div>
@@ -145,7 +149,7 @@ export default function App() {
         {selectedCar && chatOpen && (
           <aside className="w-full max-w-sm flex flex-col border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-slate-700">
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">💬 Чат-дневник</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">💬 {t('chatTitle')}</span>
               <button onClick={toggleChat} title="Свернуть" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
             </div>
             <ChatWindow car={selectedCar} currency={user?.currency} onAddCar={() => setView('addcar')} onRecordSaved={bumpData} />
@@ -168,9 +172,9 @@ function RecordsPanel({ car, currency, onAddCar, onChanged, refreshKey }) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Добавьте автомобиль для начала</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('addCarPrompt')}</p>
           <button onClick={onAddCar} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
-            Добавить авто
+            {t('addCar')}
           </button>
         </div>
       </div>
@@ -227,7 +231,7 @@ function AuthScreen({ onLogin, onRegister }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-2">GarageBrain</h1>
-        <p className="text-gray-500 text-center mb-6">Чат-дневник вашего автомобиля</p>
+        <p className="text-gray-500 text-center mb-6">{t('appTagline')}</p>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>
@@ -237,7 +241,7 @@ function AuthScreen({ onLogin, onRegister }) {
           {isRegister && (
             <input
               type="text"
-              placeholder="Ваше имя"
+              placeholder={t('yourName')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -245,7 +249,7 @@ function AuthScreen({ onLogin, onRegister }) {
           )}
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('email')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -253,7 +257,7 @@ function AuthScreen({ onLogin, onRegister }) {
           />
           <input
             type="password"
-            placeholder="Пароль"
+            placeholder={t('password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -264,7 +268,7 @@ function AuthScreen({ onLogin, onRegister }) {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {loading ? 'Загрузка...' : isRegister ? 'Зарегистрироваться' : 'Войти'}
+            {loading ? t('loading') : isRegister ? t('register') : t('login')}
           </button>
         </form>
 
@@ -272,7 +276,7 @@ function AuthScreen({ onLogin, onRegister }) {
           onClick={() => setIsRegister(!isRegister)}
           className="w-full mt-4 text-blue-600 text-sm hover:underline"
         >
-          {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+          {isRegister ? t('haveAccount') : t('noAccount')}
         </button>
       </div>
     </div>
@@ -289,7 +293,7 @@ function AddCarModal({ onAdd, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!brand || !model) {
-      setError('Марка и модель обязательны');
+      setError(t('requiredBrandModel'));
       return;
     }
     onAdd({
@@ -303,7 +307,7 @@ function AddCarModal({ onAdd, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Добавить автомобиль</h2>
+        <h2 className="text-xl font-bold mb-4">{t('addCar')}</h2>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>
@@ -312,7 +316,7 @@ function AddCarModal({ onAdd, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
-            placeholder="Марка (Toyota, BMW...)"
+            placeholder={t('brand')}
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -320,7 +324,7 @@ function AddCarModal({ onAdd, onClose }) {
           />
           <input
             type="text"
-            placeholder="Модель (RAV4, X5...)"
+            placeholder={t('model')}
             value={model}
             onChange={(e) => setModel(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -328,14 +332,14 @@ function AddCarModal({ onAdd, onClose }) {
           />
           <input
             type="number"
-            placeholder="Год выпуска"
+            placeholder={t('year')}
             value={year}
             onChange={(e) => setYear(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="number"
-            placeholder="Текущий пробег (км)"
+            placeholder={t('mileageKm')}
             value={mileage}
             onChange={(e) => setMileage(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -346,13 +350,13 @@ function AddCarModal({ onAdd, onClose }) {
               onClick={onClose}
               className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition"
             >
-              Отмена
+              {t('cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
             >
-              Добавить
+              {t('addCar')}
             </button>
           </div>
         </form>

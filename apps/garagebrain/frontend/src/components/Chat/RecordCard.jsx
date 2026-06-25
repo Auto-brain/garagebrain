@@ -1,9 +1,7 @@
-const TYPE_LABELS = {
-  service: 'ТО',
-  repair: 'Ремонт',
-  fuel: 'Заправка',
-  other: 'Другое',
-};
+import { formatMoney } from '../../lib/money.js';
+import { t } from '../../lib/i18n.js';
+
+const TYPE_KEYS = { service: 'typeService', repair: 'typeRepair', fuel: 'typeFuel', other: 'typeOther' };
 
 const TYPE_COLORS = {
   service: 'bg-green-100 text-green-700',
@@ -11,8 +9,6 @@ const TYPE_COLORS = {
   fuel: 'bg-blue-100 text-blue-700',
   other: 'bg-gray-100 text-gray-700',
 };
-
-import { formatMoney } from '../../lib/money.js';
 
 export default function RecordCard({ record, currency }) {
   // parsed_record приходит из бэкенда с заглавными ключами (Type/Mileage/Cost),
@@ -28,15 +24,15 @@ export default function RecordCard({ record, currency }) {
       <div className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl p-4 max-w-[80%] shadow-sm">
         <div className="flex items-center gap-2 mb-2">
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[type] || TYPE_COLORS.other}`}>
-            {TYPE_LABELS[type] || type}
+            {t(TYPE_KEYS[type] || 'typeOther')}
           </span>
-          {date && <span className="text-xs text-gray-500">{String(date).slice(0, 10)}</span>}
+          {date && <span className="text-xs text-gray-500 dark:text-gray-400">{String(date).slice(0, 10)}</span>}
         </div>
-        <p className="text-sm font-medium text-gray-800">{title}</p>
-        <div className="flex gap-4 mt-2 text-xs text-gray-500">
-          {mileage > 0 && <span>{mileage.toLocaleString()} км</span>}
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{title}</p>
+        <div className="flex gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+          {mileage > 0 && <span>{mileage.toLocaleString()} {t('km')}</span>}
           {cost > 0 && (
-            <span className="text-red-600 font-medium">{formatMoney(cost, null, currency)}</span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{formatMoney(cost, null, currency)}</span>
           )}
         </div>
       </div>

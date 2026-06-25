@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../lib/api.js';
 import { getTheme, toggleTheme } from '../../lib/theme.js';
+import { t, LANGS } from '../../lib/i18n.js';
 
 export default function Header({ user, cars, selectedCar, onSelectCar, onLogout, onAddCar, onUserUpdate, onCarUpdate }) {
   const [showCars, setShowCars] = useState(false);
@@ -69,7 +70,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
                     }}
                     className="w-full text-left px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 border-t border-gray-100 dark:border-slate-700"
                   >
-                    + Добавить авто
+                    {t('addCarBtn')}
                   </button>
                 </div>
               )}
@@ -78,7 +79,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
           {selectedCar && (
             <button
               onClick={() => setEditCar(true)}
-              title="Изменить автомобиль"
+              title={t('editCar')}
               className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-slate-700 transition"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -90,14 +91,14 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
 
         <div className="flex items-center gap-3">
           {selectedCar && (
-            <div className="text-sm text-gray-500">
-              Пробег: <span className="font-medium text-gray-700">{selectedCar.mileage.toLocaleString()} км</span>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {t('mileage')}: <span className="font-medium text-gray-700 dark:text-gray-200">{selectedCar.mileage.toLocaleString()} {t('km')}</span>
             </div>
           )}
           <button
             onClick={connectTelegram}
             disabled={linking}
-            title="Связать аккаунт с Telegram"
+            title={t('linkTelegram')}
             className="p-2 rounded-lg text-sky-500 hover:text-sky-600 hover:bg-sky-50 dark:text-sky-400 dark:hover:text-sky-300 dark:hover:bg-slate-700 transition disabled:opacity-50"
           >
             {linking ? (
@@ -110,14 +111,14 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
           </button>
           <button
             onClick={() => setThemeState(toggleTheme())}
-            title="Тема"
+            title={t('theme')}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            title="Настройки аккаунта"
+            title={t('settingsAccount')}
             className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:underline"
           >
             {user?.name || user?.email}
@@ -126,7 +127,7 @@ export default function Header({ user, cars, selectedCar, onSelectCar, onLogout,
             onClick={onLogout}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
           >
-            Выйти
+            {t('logout')}
           </button>
         </div>
       </div>
@@ -155,7 +156,7 @@ function EditCarModal({ car, onClose, onSaved }) {
   const [error, setError] = useState('');
 
   const save = async () => {
-    if (!brand || !model) { setError('Марка и модель обязательны'); return; }
+    if (!brand || !model) { setError(t('requiredBrandModel')); return; }
     setBusy(true);
     setError('');
     try {
@@ -181,48 +182,48 @@ function EditCarModal({ car, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold mb-4">Изменить автомобиль</h2>
+        <h2 className="text-xl font-bold mb-4">{t('editCar')}</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
           <label className="block">
-            <span className={labelCls}>Марка</span>
+            <span className={labelCls}>{t('brand')}</span>
             <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className={`mt-1 ${inputCls}`} />
           </label>
           <label className="block">
-            <span className={labelCls}>Модель</span>
+            <span className={labelCls}>{t('model')}</span>
             <input type="text" value={model} onChange={(e) => setModel(e.target.value)} className={`mt-1 ${inputCls}`} />
           </label>
           <div className="flex gap-3">
             <label className="block w-1/2 min-w-0">
-              <span className={labelCls}>Год</span>
+              <span className={labelCls}>{t('year')}</span>
               <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className={`mt-1 ${inputCls}`} />
             </label>
             <label className="block w-1/2 min-w-0">
-              <span className={labelCls}>Пробег, км</span>
+              <span className={labelCls}>{t('mileageKm')}</span>
               <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} className={`mt-1 ${inputCls}`} />
             </label>
           </div>
           <label className="block">
-            <span className={labelCls}>Гос. номер</span>
+            <span className={labelCls}>{t('regNumber')}</span>
             <input type="text" value={regNumber} onChange={(e) => setRegNumber(e.target.value)} placeholder="напр. 1234 AB-7" className={`mt-1 ${inputCls}`} />
           </label>
           <label className="block">
-            <span className={labelCls}>Двигатель</span>
+            <span className={labelCls}>{t('engine')}</span>
             <input type="text" value={engine} onChange={(e) => setEngine(e.target.value)} placeholder="напр. 1.6" className={`mt-1 ${inputCls}`} />
           </label>
           <label className="block">
-            <span className={labelCls}>VIN</span>
+            <span className={labelCls}>{t('vin')}</span>
             <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} className={`mt-1 ${inputCls}`} />
           </label>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} disabled={busy}
             className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50">
-            Отмена
+            {t('cancel')}
           </button>
           <button onClick={save} disabled={busy}
             className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
-            {busy ? '…' : 'Сохранить'}
+            {busy ? '…' : t('save')}
           </button>
         </div>
       </div>
@@ -249,6 +250,7 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
   const [country, setCountry] = useState(user?.country || '');
   const [region, setRegion] = useState(user?.region || '');
   const [currency, setCurrency] = useState(user?.currency || '');
+  const [language, setLang] = useState(user?.language || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -262,7 +264,7 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
     setSaving(true);
     setError('');
     try {
-      const updated = await api.updateProfile({ name, country, region, currency });
+      const updated = await api.updateProfile({ name, country, region, currency, language });
       if (onUserUpdate) onUserUpdate(updated);
       onClose();
     } catch (e) {
@@ -275,18 +277,18 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold mb-4">Настройки</h2>
+        <h2 className="text-xl font-bold mb-4">{t('settings')}</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-4">
           <label className="block">
-            <span className="text-sm text-gray-500">Имя</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('name')}</span>
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
               className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
           <label className="block">
-            <span className="text-sm text-gray-500">Страна</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('country')}</span>
             <select
               value={country} onChange={(e) => handleCountryChange(e.target.value)}
               className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -295,7 +297,7 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm text-gray-500">Регион / область</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('region')}</span>
             <input
               type="text" value={region} onChange={(e) => setRegion(e.target.value)}
               placeholder="напр. Минская область"
@@ -303,22 +305,32 @@ function SettingsModal({ user, onClose, onUserUpdate }) {
             />
           </label>
           <label className="block">
-            <span className="text-sm text-gray-500">Валюта по умолчанию</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('currency')}</span>
             <select
               value={currency} onChange={(e) => setCurrency(e.target.value)}
               className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
-              <option value="">— не выбрано —</option>
+              <option value="">{t('notSelected')}</option>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('language')}</span>
+            <select
+              value={language} onChange={(e) => setLang(e.target.value)}
+              className="w-full mt-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">{t('notSelected')}</option>
+              {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </label>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition">
-            Отмена
+            {t('cancel')}
           </button>
           <button onClick={save} disabled={saving} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
-            {saving ? 'Сохранение…' : 'Сохранить'}
+            {saving ? '…' : t('save')}
           </button>
         </div>
       </div>

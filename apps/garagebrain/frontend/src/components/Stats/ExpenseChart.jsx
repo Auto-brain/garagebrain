@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
+import { t } from '../../lib/i18n.js';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from 'recharts';
 import { api } from '../../lib/api.js';
 import { formatMoney } from '../../lib/money.js';
 
-const TYPE_LABELS = {
-  service: 'ТО',
-  repair: 'Ремонт',
-  fuel: 'Топливо',
-  other: 'Прочее',
-};
+const TYPE_KEYS = { service: 'typeService', repair: 'typeRepair', fuel: 'typeFuel', other: 'typeOther' };
 const TYPE_COLORS = {
   service: '#2563eb',
   repair: '#dc2626',
@@ -31,9 +27,9 @@ export default function ExpenseChart({ car, currency }) {
       .finally(() => setLoading(false));
   }, [car?.id]);
 
-  if (loading) return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">Загрузка статистики…</div>;
+  if (loading) return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">{t('loading')}</div>;
   if (!stats || stats.record_count === 0) {
-    return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">Пока нет расходов для графика.</div>;
+    return <div className="p-6 text-gray-400 dark:text-gray-500 text-sm">{t('noExpenses')}</div>;
   }
 
   const monthly = Object.entries(stats.monthly_costs || {})
@@ -41,15 +37,15 @@ export default function ExpenseChart({ car, currency }) {
     .map(([month, cost]) => ({ month, cost }));
 
   const byType = Object.entries(stats.records_by_type || {})
-    .map(([type, cost]) => ({ type, label: TYPE_LABELS[type] || type, cost }));
+    .map(([type, cost]) => ({ type, label: t(TYPE_KEYS[type] || 'typeOther'), cost }));
 
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
         <div className="flex items-baseline justify-between mb-4">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-100">Расходы по месяцам</h3>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100">{t('expensesByMonth')}</h3>
           <span className="text-sm text-gray-500">
-            Всего: <span className="font-semibold text-gray-800 dark:text-gray-100">{formatMoney(stats.total_cost, null, currency)}</span>
+            {t('total')}: <span className="font-semibold text-gray-800 dark:text-gray-100">{formatMoney(stats.total_cost, null, currency)}</span>
           </span>
         </div>
         <ResponsiveContainer width="100%" height={220}>
@@ -64,7 +60,7 @@ export default function ExpenseChart({ car, currency }) {
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
-        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">По категориям</h3>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('byCategory')}</h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={byType} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />

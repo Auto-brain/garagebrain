@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   country TEXT,
   region TEXT,
   currency TEXT,
+  language TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { t } from '../../lib/i18n.js';
 import { api } from '../../lib/api.js';
 import MessageBubble from './MessageBubble.jsx';
 import RecordCard from './RecordCard.jsx';
@@ -98,12 +99,12 @@ export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Добавьте автомобиль для начала</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('addCarPrompt')}</p>
           <button
             onClick={onAddCar}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
           >
-            Добавить авто
+            {t('addCar')}
           </button>
         </div>
       </div>
@@ -162,7 +163,7 @@ export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            title="Прикрепить фото чека"
+            title={t('attachPhoto')}
             className="px-3 py-3 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition disabled:opacity-50"
           >
             {uploading ? '…' : '📎'}
@@ -172,7 +173,7 @@ export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Расскажите о обслуживании..."
+            placeholder={t('chatPlaceholder')}
             className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
@@ -181,18 +182,18 @@ export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
             disabled={loading || !input.trim()}
             className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50"
           >
-            Отправить
+            {t('send')}
           </button>
         </div>
         <div className="flex gap-2 mt-2">
           <QuickAction onClick={() => setInput('Заменил масло сегодня, пробег 87500 км, 3800₽')}>
-            Замена масла
+            {t('qaOil')}
           </QuickAction>
           <QuickAction onClick={() => setInput('Залил бензин 95, 45 литров, 3200₽')}>
-            Заправка
+            {t('qaFuel')}
           </QuickAction>
           <QuickAction onClick={() => setInput('Что нужно сделать по обслуживанию?')}>
-            Статус ТО
+            {t('qaStatus')}
           </QuickAction>
         </div>
       </div>

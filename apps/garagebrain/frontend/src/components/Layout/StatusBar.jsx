@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../lib/api.js';
 import { enableNotifications, pushSupported } from '../../lib/notifications.js';
 import { formatMoney } from '../../lib/money.js';
+import { t } from '../../lib/i18n.js';
 
 // Суммы за текущий месяц / год / всего из monthly_costs (ключи "YYYY-MM").
 function periodSums(stats) {
@@ -55,30 +56,30 @@ export default function StatusBar({ car, currency, refreshKey }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-sm">
-      <Metric label="Пробег" value={`${car.mileage.toLocaleString()} км`} />
-      {stats && <Metric label="Месяц" value={formatMoney(sums.month, null, currency)} />}
-      {stats && <Metric label="Год" value={formatMoney(sums.year, null, currency)} />}
-      {stats && <Metric label="Всего" value={formatMoney(sums.total, null, currency)} />}
+      <Metric label={t('mileage')} value={`${car.mileage.toLocaleString()} ${t('km')}`} />
+      {stats && <Metric label={t('month')} value={formatMoney(sums.month, null, currency)} />}
+      {stats && <Metric label={t('yearLabel')} value={formatMoney(sums.year, null, currency)} />}
+      {stats && <Metric label={t('total')} value={formatMoney(sums.total, null, currency)} />}
       {fuel && fuel.avg_consumption > 0 && (
-        <Metric label="Расход" value={`${fuel.avg_consumption.toFixed(1)} л/100км`} />
+        <Metric label={t('consumption')} value={`${fuel.avg_consumption.toFixed(1)} л/100км`} />
       )}
       {nextReminder && (
         <Metric
-          label="Ближайшее"
+          label={t('nextReminder')}
           value={`${nextReminder.title} · ${new Date(nextReminder.trigger_date).toLocaleDateString('ru-RU')}`}
         />
       )}
 
       <div className="ml-auto">
         {pushState === 'on' ? (
-          <span className="text-green-600 dark:text-green-400">🔔 Уведомления включены</span>
+          <span className="text-green-600 dark:text-green-400">{t('pushOn')}</span>
         ) : pushSupported() ? (
           <button
             onClick={handleEnablePush}
             disabled={pushState === 'enabling'}
             className="text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
           >
-            {pushState === 'enabling' ? 'Включаем…' : '🔔 Включить напоминания'}
+            {pushState === 'enabling' ? t('enabling') : t('enablePush')}
           </button>
         ) : null}
       </div>

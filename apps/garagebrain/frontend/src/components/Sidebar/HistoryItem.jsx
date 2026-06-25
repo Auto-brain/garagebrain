@@ -1,10 +1,11 @@
 import { formatMoney } from '../../lib/money.js';
+import { t } from '../../lib/i18n.js';
 
 const TYPE_META = {
-  service: { icon: '🔧', label: 'ТО' },
-  repair: { icon: '🛠️', label: 'Ремонт' },
-  fuel: { icon: '⛽', label: 'Заправка' },
-  other: { icon: '📋', label: 'Прочее' },
+  service: { icon: '🔧', k: 'typeService' },
+  repair: { icon: '🛠️', k: 'typeRepair' },
+  fuel: { icon: '⛽', k: 'typeFuel' },
+  other: { icon: '📋', k: 'typeOther' },
 };
 
 export default function HistoryItem({ record, currency, onClick }) {
@@ -43,11 +44,11 @@ export default function HistoryItem({ record, currency, onClick }) {
               : <span className="text-xs text-gray-300 dark:text-gray-600 whitespace-nowrap">—</span>}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-gray-500 dark:text-gray-400">
-            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 rounded">{meta.label}</span>
+            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 rounded">{t(meta.k)}</span>
             <span>{date}</span>
-            {record.mileage != null && <span>· {record.mileage.toLocaleString()} км</span>}
+            {record.mileage != null && <span>· {record.mileage.toLocaleString()} {t('km')}</span>}
             {hasCost && hasParts && (
-              <span>· работа {formatMoney(record.cost, costCur)} + материалы {formatMoney(record.parts_cost, partsCur)}</span>
+              <span>· {t('work')} {formatMoney(record.cost, costCur)} + {t('materials').toLowerCase()} {formatMoney(record.parts_cost, partsCur)}</span>
             )}
           </div>
         </div>
