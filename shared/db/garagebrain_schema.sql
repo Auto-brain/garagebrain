@@ -131,7 +131,8 @@ CREATE TABLE IF NOT EXISTS car_invites (
   car_id UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'driver',
   invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,   -- TTL самого кода приглашения
+  member_expires_at TIMESTAMPTZ,     -- срок доступа участника (renter); кладётся в car_members при принятии
   used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );

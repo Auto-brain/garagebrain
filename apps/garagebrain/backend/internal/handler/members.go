@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/auto-brain/garagebrain/internal/db"
 	"github.com/auto-brain/garagebrain/internal/middleware"
@@ -33,6 +34,8 @@ func ListMembers(w http.ResponseWriter, r *http.Request) {
 
 type inviteRequest struct {
 	Role string `json:"role"`
+	// ExpiresInDays — срок аренды для role=renter (опционально; иначе дефолт в БД).
+	ExpiresInDays *int `json:"expires_in_days,omitempty"`
 }
 
 // InviteMember (только owner) — создаёт одноразовый код приглашения на роль.
@@ -60,8 +63,14 @@ func InviteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var memberExpiresAt *time.Time
+	if req.Role == db.RoleRenter && req.ExpiresInDays != nil && *req.ExpiresInDays > 0 {
+		t := time.Now().Add(time.Duration(*req.ExpiresInDays) * 24 * time.Hour)
+		memberExpiresAt = &t
+	}
+
 	userID := middleware.GetUserID(r.Context())
-	code, err := db.CreateCarInvite(r.Context(), carID, req.Role, userID)
+	code, err := db.CreateCarInvite(r.Context(), carID, req.Role, userID, memberExpiresAt)
 	if err != nil {
 		http.Error(w, `{"error":"db error"}`, http.StatusInternalServerError)
 		return

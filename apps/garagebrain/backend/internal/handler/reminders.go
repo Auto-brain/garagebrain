@@ -43,7 +43,7 @@ func CreateReminder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := authorizeCar(w, r, req.CarID); !ok {
+	if _, ok := authorizeCarWrite(w, r, req.CarID); !ok {
 		return
 	}
 

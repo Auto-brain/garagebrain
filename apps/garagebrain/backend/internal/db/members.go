@@ -123,10 +123,22 @@ func UpdateCarMemberRole(ctx context.Context, carID, userID uuid.UUID, role stri
 	return err
 }
 
+// defaultRentalWindow — срок аренды по умолчанию, если для renter-инвайта
+// явный срок не задан (renter без срока не имел бы смысла).
+const defaultRentalWindow = 30 * 24 * time.Hour
+
 // CreateCarInvite генерирует одноразовый 6-значный код приглашения в авто.
-// expiresAt — опциональный срок доступа (для renter); кладётся в car_members
-// при принятии инвайта.
-func CreateCarInvite(ctx context.Context, carID uuid.UUID, role string, invitedBy uuid.UUID) (string, error) {
+// memberExpiresAt — срок доступа участника после принятия (для renter кладётся
+// в car_members.expires_at). Для renter без явного срока подставляется
+// defaultRentalWindow; для остальных ролей игнорируется (доступ бессрочный).
+func CreateCarInvite(ctx context.Context, carID uuid.UUID, role string, invitedBy uuid.UUID, memberExpiresAt *time.Time) (string, error) {
+	if role == RoleRenter && memberExpiresAt == nil {
+		t := time.Now().Add(defaultRentalWindow)
+		memberExpiresAt = &t
+	}
+	if role != RoleRenter {
+		memberExpiresAt = nil
+	}
 	for attempt := 0; attempt < 5; attempt++ {
 		n, err := rand.Int(rand.Reader, big.NewInt(1000000))
 		if err != nil {
@@ -134,9 +146,9 @@ func CreateCarInvite(ctx context.Context, carID uuid.UUID, role string, invitedB
 		}
 		code := fmt.Sprintf("%06d", n.Int64())
 		_, err = Pool.Exec(ctx,
-			`INSERT INTO car_invites (code, car_id, role, invited_by, expires_at)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			code, carID, role, invitedBy, time.Now().Add(inviteTTL),
+			`INSERT INTO car_invites (code, car_id, role, invited_by, expires_at, member_expires_at)
+			 VALUES ($1, $2, $3, $4, $5, $6)`,
+			code, carID, role, invitedBy, time.Now().Add(inviteTTL), memberExpiresAt,
 		)
 		if err == nil {
 			return code, nil
@@ -155,16 +167,17 @@ func AcceptCarInvite(ctx context.Context, code string, userID uuid.UUID) (uuid.U
 	defer tx.Rollback(ctx)
 
 	var (
-		carID     uuid.UUID
-		role      string
-		invitedBy *uuid.UUID
+		carID           uuid.UUID
+		role            string
+		invitedBy       *uuid.UUID
+		memberExpiresAt *time.Time
 	)
 	err = tx.QueryRow(ctx,
 		`UPDATE car_invites SET used_at = now()
 		 WHERE code = $1 AND used_at IS NULL AND expires_at > now()
-		 RETURNING car_id, role, invited_by`,
+		 RETURNING car_id, role, invited_by, member_expires_at`,
 		code,
-	).Scan(&carID, &role, &invitedBy)
+	).Scan(&carID, &role, &invitedBy, &memberExpiresAt)
 	if err != nil {
 		return uuid.Nil, ErrInviteInvalid
 	}
@@ -174,11 +187,13 @@ func AcceptCarInvite(ctx context.Context, code string, userID uuid.UUID) (uuid.U
 		inviter = *invitedBy
 	}
 
+	// expires_at участника — из инвайта (для renter); для прочих ролей NULL
+	// (бессрочно). Так доступ renter автоматически истекает.
 	if _, err := tx.Exec(ctx,
-		`INSERT INTO car_members (car_id, user_id, role, invited_by)
-		 VALUES ($1, $2, $3, $4)
-		 ON CONFLICT (car_id, user_id) DO UPDATE SET role = $3`,
-		carID, userID, role, inviter,
+		`INSERT INTO car_members (car_id, user_id, role, invited_by, expires_at)
+		 VALUES ($1, $2, $3, $4, $5)
+		 ON CONFLICT (car_id, user_id) DO UPDATE SET role = $3, expires_at = $5`,
+		carID, userID, role, inviter, memberExpiresAt,
 	); err != nil {
 		return uuid.Nil, err
 	}

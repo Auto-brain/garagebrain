@@ -49,7 +49,7 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := authorizeCar(w, r, req.CarID); !ok {
+	if _, ok := authorizeCarWrite(w, r, req.CarID); !ok {
 		return
 	}
 
@@ -64,14 +64,16 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(record)
 }
 
-// recordOwnerCar находит авто записи и проверяет, что оно принадлежит юзеру.
+// recordOwnerCar находит авто записи и проверяет право на её изменение —
+// пользователь должен быть участником авто с правом записи (не viewer).
+// Используется только мутирующими обработчиками (Update/DeleteRecord).
 func recordOwnerCar(w http.ResponseWriter, r *http.Request, recordID uuid.UUID) bool {
 	carID, err := db.GetRecordCarID(r.Context(), recordID)
 	if err != nil {
 		http.Error(w, `{"error":"record not found"}`, http.StatusNotFound)
 		return false
 	}
-	_, ok := authorizeCar(w, r, carID)
+	_, ok := authorizeCarWrite(w, r, carID)
 	return ok
 }
 

@@ -64,7 +64,7 @@ func CreateFuel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	car, ok := authorizeCar(w, r, req.CarID)
+	car, ok := authorizeCarWrite(w, r, req.CarID)
 	if !ok {
 		return
 	}

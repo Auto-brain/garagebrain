@@ -71,7 +71,7 @@ func UpdateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := authorizeCar(w, r, carID); !ok {
+	if _, ok := authorizeCarWrite(w, r, carID); !ok {
 		return
 	}
 
@@ -102,7 +102,7 @@ func UpdateMileage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := authorizeCar(w, r, carID); !ok {
+	if _, ok := authorizeCarWrite(w, r, carID); !ok {
 		return
 	}
 

@@ -50,7 +50,9 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	car, ok := authorizeCar(w, r, carID)
+	// Чат создаёт записи/напоминания и двигает пробег — мутирующая операция,
+	// поэтому viewer (только чтение) к чату не допускается.
+	car, ok := authorizeCarWrite(w, r, carID)
 	if !ok {
 		return
 	}

@@ -40,6 +40,21 @@ func authorizeCarRole(w http.ResponseWriter, r *http.Request, carID uuid.UUID) (
 	return car, role, true
 }
 
+// authorizeCarWrite разрешает мутирующие операции (записи/заправки/напоминания,
+// пробег, чат-ввод) всем участникам, кроме viewer (только чтение по спецификации).
+// owner/driver/renter — могут писать; viewer получает 403.
+func authorizeCarWrite(w http.ResponseWriter, r *http.Request, carID uuid.UUID) (*model.Car, bool) {
+	car, role, ok := authorizeCarRole(w, r, carID)
+	if !ok {
+		return nil, false
+	}
+	if role == db.RoleViewer {
+		http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+		return nil, false
+	}
+	return car, true
+}
+
 // authorizeCarOwner разрешает операцию только владельцу авто (удаление,
 // управление участниками). Возвращает car и ok=true только для role=owner.
 func authorizeCarOwner(w http.ResponseWriter, r *http.Request, carID uuid.UUID) (*model.Car, bool) {
