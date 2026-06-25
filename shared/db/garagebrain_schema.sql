@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS cars (
   model TEXT NOT NULL,
   year INT,
   vin TEXT,
+  reg_number TEXT,
   color TEXT,
   engine TEXT,
   drive TEXT,

@@ -47,6 +47,7 @@ export default function PassportCard({ car }) {
 
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <Field label="Пробег" value={`${car.mileage.toLocaleString()} км`} />
+        {car.reg_number && <Field label="Гос. номер" value={car.reg_number} />}
         {car.engine && <Field label="Двигатель" value={car.engine} />}
         {car.drive && <Field label="Привод" value={car.drive} />}
         {car.vin && <Field label="VIN" value={car.vin} />}

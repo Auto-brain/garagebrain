@@ -13,6 +13,7 @@ type Car struct {
 	Model       string     `json:"model"`
 	Year        *int       `json:"year"`
 	VIN         *string    `json:"vin"`
+	RegNumber   *string    `json:"reg_number"`
 	Color       *string    `json:"color"`
 	Engine      *string    `json:"engine"`
 	Drive       *string    `json:"drive"`
@@ -29,6 +30,7 @@ type CreateCarRequest struct {
 	Model       string  `json:"model"`
 	Year        *int    `json:"year"`
 	VIN         *string `json:"vin"`
+	RegNumber   *string `json:"reg_number"`
 	Color       *string `json:"color"`
 	Engine      *string `json:"engine"`
 	Drive       *string `json:"drive"`
@@ -43,12 +45,13 @@ type UpdateMileageRequest struct {
 }
 
 type UpdateCarRequest struct {
-	Brand   string  `json:"brand"`
-	Model   string  `json:"model"`
-	Year    *int    `json:"year"`
-	Mileage int     `json:"mileage"`
-	VIN     *string `json:"vin"`
-	Color   *string `json:"color"`
-	Engine  *string `json:"engine"`
-	Drive   *string `json:"drive"`
+	Brand     string  `json:"brand"`
+	Model     string  `json:"model"`
+	Year      *int    `json:"year"`
+	Mileage   int     `json:"mileage"`
+	VIN       *string `json:"vin"`
+	RegNumber *string `json:"reg_number"`
+	Color     *string `json:"color"`
+	Engine    *string `json:"engine"`
+	Drive     *string `json:"drive"`
 }

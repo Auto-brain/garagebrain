@@ -143,6 +143,7 @@ function EditCarModal({ car, onClose, onSaved }) {
   const [model, setModel] = useState(car.model || '');
   const [year, setYear] = useState(car.year ?? '');
   const [mileage, setMileage] = useState(car.mileage ?? '');
+  const [regNumber, setRegNumber] = useState(car.reg_number || '');
   const [engine, setEngine] = useState(car.engine || '');
   const [vin, setVin] = useState(car.vin || '');
   const [busy, setBusy] = useState(false);
@@ -158,6 +159,7 @@ function EditCarModal({ car, onClose, onSaved }) {
         model,
         year: year === '' ? null : parseInt(year, 10),
         mileage: mileage === '' ? 0 : parseInt(mileage, 10),
+        reg_number: regNumber || null,
         engine: engine || null,
         vin: vin || null,
       });
@@ -168,26 +170,45 @@ function EditCarModal({ car, onClose, onSaved }) {
     }
   };
 
+  const inputCls = 'w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500';
+  const labelCls = 'text-sm text-gray-500 dark:text-gray-400';
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Изменить автомобиль</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
-          <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Марка"
-            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Модель"
-            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block">
+            <span className={labelCls}>Марка</span>
+            <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="block">
+            <span className={labelCls}>Модель</span>
+            <input type="text" value={model} onChange={(e) => setModel(e.target.value)} className={`mt-1 ${inputCls}`} />
+          </label>
           <div className="flex gap-3">
-            <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Год"
-              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="Пробег, км"
-              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block w-1/2 min-w-0">
+              <span className={labelCls}>Год</span>
+              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className={`mt-1 ${inputCls}`} />
+            </label>
+            <label className="block w-1/2 min-w-0">
+              <span className={labelCls}>Пробег, км</span>
+              <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} className={`mt-1 ${inputCls}`} />
+            </label>
           </div>
-          <input type="text" value={engine} onChange={(e) => setEngine(e.target.value)} placeholder="Двигатель (напр. 1.6)"
-            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} placeholder="VIN"
-            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block">
+            <span className={labelCls}>Гос. номер</span>
+            <input type="text" value={regNumber} onChange={(e) => setRegNumber(e.target.value)} placeholder="напр. 1234 AB-7" className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="block">
+            <span className={labelCls}>Двигатель</span>
+            <input type="text" value={engine} onChange={(e) => setEngine(e.target.value)} placeholder="напр. 1.6" className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="block">
+            <span className={labelCls}>VIN</span>
+            <input type="text" value={vin} onChange={(e) => setVin(e.target.value)} className={`mt-1 ${inputCls}`} />
+          </label>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} disabled={busy}
