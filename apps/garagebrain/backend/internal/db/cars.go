@@ -118,6 +118,12 @@ func UpdateCarMileage(ctx context.Context, carID uuid.UUID, mileage int) error {
 	return err
 }
 
+// BumpCarMileage обновляет пробег только если новое значение больше текущего.
+func BumpCarMileage(ctx context.Context, carID uuid.UUID, mileage int) error {
+	_, err := Pool.Exec(ctx, "UPDATE cars SET mileage = $1 WHERE id = $2 AND mileage < $1", mileage, carID)
+	return err
+}
+
 func GetAllActiveCars(ctx context.Context) ([]model.Car, error) {
 	rows, err := Pool.Query(ctx, "SELECT "+carCols+" FROM cars WHERE is_active = true")
 	if err != nil {

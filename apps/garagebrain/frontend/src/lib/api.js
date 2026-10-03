@@ -142,6 +142,8 @@ export const api = {
 
   getFuelStats: (carId) => request(`/cars/${carId}/fuel/stats`),
 
+  getFuelPrices: (region) => request(`/fuel-prices?region=${encodeURIComponent(region)}`),
+
   uploadPhoto: (carId, file, recordId = 'latest') => {
     const token = localStorage.getItem('token');
     const form = new FormData();

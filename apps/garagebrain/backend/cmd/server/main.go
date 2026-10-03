@@ -77,6 +77,7 @@ func main() {
 			r.Get("/cars/{id}/fuel", handler.ListFuel)
 			r.Get("/cars/{id}/fuel/stats", handler.GetFuelStats)
 			r.Post("/fuel", handler.CreateFuel)
+			r.Get("/fuel-prices", handler.GetFuelPrices)
 			r.Post("/upload", handler.UploadPhoto)
 			r.Get("/cars/{id}/members", handler.ListMembers)
 			r.Post("/cars/{id}/members/invite", handler.InviteMember)

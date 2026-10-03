@@ -5,14 +5,47 @@ import MessageBubble from './MessageBubble.jsx';
 import RecordCard from './RecordCard.jsx';
 import AlertCard from './AlertCard.jsx';
 
-export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
+export default function ChatWindow({ car, onAddCar, currency, user, onRecordSaved, refreshKey }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [fuelPrice, setFuelPrice] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const fetchFuelPrice = (region, bustCache) => {
+    const cacheKey = `fuel-price-${region}`;
+    if (bustCache) localStorage.removeItem(cacheKey);
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (!bustCache && cached && Date.now() - cached.ts < 86_400_000) {
+        setFuelPrice(cached.data);
+        return;
+      }
+    } catch (_) {}
+    api.getFuelPrices(region)
+      .then((data) => {
+        if (data?.latest) {
+          setFuelPrice(data.latest);
+          localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: data.latest }));
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!user?.country) return;
+    const region = [user.country, user.region].filter(Boolean).join('-');
+    fetchFuelPrice(region, false);
+  }, [user?.country, user?.region]);
+
+  useEffect(() => {
+    if (!refreshKey || !user?.country) return;
+    const region = [user.country, user.region].filter(Boolean).join('-');
+    fetchFuelPrice(region, true);
+  }, [refreshKey]);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -186,13 +219,26 @@ export default function ChatWindow({ car, onAddCar, currency, onRecordSaved }) {
           </button>
         </div>
         <div className="flex gap-2 mt-2">
-          <QuickAction onClick={() => setInput('Заменил масло сегодня, пробег 87500 км, 3800₽')}>
+          <QuickAction onClick={() => {
+            const costHint = currency ? `, ... ${currency}` : '';
+            setInput(t('qaOilPreset') + costHint);
+          }}>
             {t('qaOil')}
           </QuickAction>
-          <QuickAction onClick={() => setInput('Залил бензин 95, 45 литров, 3200₽')}>
+          <QuickAction onClick={() => {
+            const liters = 40;
+            let preset;
+            if (fuelPrice) {
+              const total = Math.round(fuelPrice.price_per_liter * liters);
+              preset = `${t('qaFuelFilled')} 95, ${liters} ${t('liters')}, ${total} ${fuelPrice.currency}`;
+            } else {
+              preset = t('qaFuelPreset');
+            }
+            setInput(preset);
+          }}>
             {t('qaFuel')}
           </QuickAction>
-          <QuickAction onClick={() => setInput('Что нужно сделать по обслуживанию?')}>
+          <QuickAction onClick={() => setInput(t('qaStatusPreset'))}>
             {t('qaStatus')}
           </QuickAction>
         </div>

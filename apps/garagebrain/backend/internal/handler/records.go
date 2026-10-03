@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/auto-brain/garagebrain/internal/db"
+	"github.com/auto-brain/garagebrain/internal/middleware"
 	"github.com/auto-brain/garagebrain/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -59,6 +60,11 @@ func CreateRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if record.Mileage != nil {
+		_ = db.BumpCarMileage(r.Context(), record.CarID, *record.Mileage)
+	}
+	recordFuelPriceFromServiceRecord(r, record)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(record)
@@ -104,8 +110,38 @@ func UpdateRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if record.Mileage != nil {
+		_ = db.BumpCarMileage(r.Context(), record.CarID, *record.Mileage)
+	}
+	recordFuelPriceFromServiceRecord(r, record)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(record)
+}
+
+// recordFuelPriceFromServiceRecord extracts fuel price from a fuel-type service record and saves it.
+func recordFuelPriceFromServiceRecord(r *http.Request, record *model.ServiceRecord) {
+	if record.Type != "fuel" || record.PartsQty == nil || *record.PartsQty <= 0 {
+		return
+	}
+	if record.PartsCost == nil || *record.PartsCost <= 0 {
+		return
+	}
+	userID := middleware.GetUserID(r.Context())
+	u, err := db.GetUserByID(r.Context(), userID)
+	if err != nil || u.Country == "" {
+		return
+	}
+	region := u.Country
+	if u.Region != "" {
+		region = u.Country + "-" + u.Region
+	}
+	currency := u.Currency
+	if currency == "" {
+		currency = "RUB"
+	}
+	pricePerLiter := *record.PartsCost / float64(*record.PartsQty)
+	_ = db.RecordFuelPrice(r.Context(), region, currency, pricePerLiter)
 }
 
 func DeleteRecord(w http.ResponseWriter, r *http.Request) {

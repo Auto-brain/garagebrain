@@ -31,8 +31,8 @@ export default function HistorySidebar({ car, currency, onChanged, refreshKey })
   const afterChange = () => { setEditing(null); setAdding(false); reload(); if (onChanged) onChanged(); };
 
   return (
-    <div className="max-w-3xl w-full mx-auto p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">{t('historyTitle')}</h2>
         <button
           onClick={() => setAdding(true)}
@@ -44,15 +44,15 @@ export default function HistorySidebar({ car, currency, onChanged, refreshKey })
       </div>
 
       {loading ? (
-        <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">{t('loading')}</div>
+        <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">{t('loading')}</div>
       ) : error ? (
-        <div className="p-4 text-center text-red-600 bg-red-50 dark:bg-red-900/30 rounded-lg text-sm">{error}</div>
+        <div className="mx-4 p-4 text-center text-red-600 bg-red-50 dark:bg-red-900/30 rounded-lg text-sm">{error}</div>
       ) : (records || []).length === 0 ? (
-        <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+        <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
           {t('noRecords')}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 px-4 pb-4">
           {records.map((record) => (
             <div key={record.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl">
               <HistoryItem record={record} currency={currency} onClick={() => setEditing(record)} />
@@ -100,8 +100,29 @@ function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved
   const [costCurrency, setCostCurrency] = useState(record.currency || defaultCurrency || '');
   const [partsCost, setPartsCost] = useState(record.parts_cost ?? '');
   const [partsCurrency, setPartsCurrency] = useState(record.parts_currency || defaultCurrency || '');
+  const [description, setDescription] = useState(record.description || '');
+  const [partsQty, setPartsQty] = useState(record.parts_qty ?? '');
+  const [partsUnitPrice, setPartsUnitPrice] = useState(
+    record.parts_qty && record.parts_cost ? (record.parts_cost / record.parts_qty).toFixed(2) : ''
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  const handleQtyChange = (v) => {
+    setPartsQty(v);
+    const q = parseFloat(v), u = parseFloat(partsUnitPrice);
+    if (!isNaN(q) && !isNaN(u) && q > 0 && u > 0) setPartsCost((q * u).toFixed(2));
+  };
+  const handleUnitPriceChange = (v) => {
+    setPartsUnitPrice(v);
+    const q = parseFloat(partsQty), u = parseFloat(v);
+    if (!isNaN(q) && !isNaN(u) && q > 0 && u > 0) setPartsCost((q * u).toFixed(2));
+  };
+  const handlePartsCostChange = (v) => {
+    setPartsCost(v);
+    const total = parseFloat(v), q = parseFloat(partsQty);
+    if (!isNaN(total) && !isNaN(q) && q > 0 && total > 0) setPartsUnitPrice((total / q).toFixed(2));
+  };
 
   const save = async () => {
     if (!title || !date) { setError(t('requiredTitleDate')); return; }
@@ -116,6 +137,8 @@ function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved
       currency: costCurrency,
       parts_cost: partsCost === '' ? null : parseFloat(partsCost),
       parts_currency: partsCurrency,
+      parts_qty: partsQty === '' ? null : parseInt(partsQty, 10),
+      description,
     };
     try {
       if (isNew) await api.createRecord({ car_id: carId, ...payload });
@@ -150,7 +173,7 @@ function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">{isNew ? t('newRecord') : t('editRecord')}</h2>
         {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <div className="space-y-3">
@@ -160,6 +183,10 @@ function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved
           </select>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('description')}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder={t('recordNotes')}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder={t('mileageKm')}
@@ -171,9 +198,18 @@ function EditRecordModal({ record = {}, carId, defaultCurrency, onClose, onSaved
               className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             {curSelect(costCurrency, setCostCurrency)}
           </div>
+          <div className="flex items-center gap-2">
+            <input type="number" min="0" step="1" value={partsQty} onChange={(e) => handleQtyChange(e.target.value)}
+              placeholder={t('partsQty')}
+              className="w-24 px-3 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <span className="text-gray-400 dark:text-gray-500 text-sm font-medium select-none">×</span>
+            <input type="number" min="0" step="0.01" value={partsUnitPrice} onChange={(e) => handleUnitPriceChange(e.target.value)}
+              placeholder={t('unitPrice')}
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
           <div className="flex gap-2">
             <input type="number" step={currencyDecimals(partsCurrency) ? '0.01' : '1'}
-              value={partsCost} onChange={(e) => setPartsCost(e.target.value)}
+              value={partsCost} onChange={(e) => handlePartsCostChange(e.target.value)}
               placeholder={type === 'fuel' ? t('fuelCost') : t('materials')}
               className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             {curSelect(partsCurrency, setPartsCurrency)}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from './lib/api.js';
 import Header from './components/Header/Header.jsx';
 import ChatWindow from './components/Chat/ChatWindow.jsx';
@@ -6,6 +6,7 @@ import HistorySidebar from './components/Sidebar/HistorySidebar.jsx';
 import StatusBar from './components/Layout/StatusBar.jsx';
 import ExpenseChart from './components/Stats/ExpenseChart.jsx';
 import PassportCard from './components/Car/PassportCard.jsx';
+import FuelPriceHistory from './components/Stats/FuelPriceHistory.jsx';
 import { setLanguage, langFromCountry, t } from './lib/i18n.js';
 
 export default function App() {
@@ -16,7 +17,54 @@ export default function App() {
   const [mainView, setMainView] = useState('records');
   const [chatOpen, setChatOpen] = useState(() => localStorage.getItem('chatOpen') !== 'false');
   const [dataVersion, setDataVersion] = useState(0);
-  const bumpData = () => setDataVersion((v) => v + 1);
+  const [chatWidth, setChatWidth] = useState(() => {
+    const saved = localStorage.getItem('chatWidth');
+    return saved ? parseInt(saved, 10) : 384;
+  });
+  const chatWidthRef = useRef(chatWidth);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isDragging.current) return;
+      const delta = dragStartX.current - e.clientX;
+      const newWidth = Math.max(240, Math.min(700, dragStartWidth.current + delta));
+      chatWidthRef.current = newWidth;
+      setChatWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      localStorage.setItem('chatWidth', String(chatWidthRef.current));
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  const handleDragStart = (e) => {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = chatWidthRef.current;
+    e.preventDefault();
+  };
+
+  const bumpData = () => {
+    setDataVersion((v) => v + 1);
+    if (selectedCar) {
+      api.getCar(selectedCar.id)
+        .then((updated) => {
+          setSelectedCar(updated);
+          setCars((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        })
+        .catch(() => {});
+    }
+  };
 
   const toggleChat = () => {
     setChatOpen((prev) => {
@@ -98,7 +146,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
       <Header
         user={user}
         cars={cars}
@@ -133,6 +181,7 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 max-w-3xl w-full mx-auto space-y-6">
               <PassportCard car={selectedCar} currency={user?.currency} />
               <ExpenseChart car={selectedCar} currency={user?.currency} refreshKey={dataVersion} />
+              <FuelPriceHistory user={user} />
             </div>
           ) : (
             <RecordsPanel
@@ -145,15 +194,26 @@ export default function App() {
           )}
         </main>
 
-        {/* Чат — сворачиваемая боковая панель */}
+        {/* Drag handle + чат */}
         {selectedCar && chatOpen && (
-          <aside className="w-full max-w-sm flex flex-col border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-slate-700">
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">💬 {t('chatTitle')}</span>
-              <button onClick={toggleChat} title="Свернуть" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+          <>
+            <div
+              onMouseDown={handleDragStart}
+              className="w-1.5 flex-none cursor-col-resize bg-gray-200 dark:bg-slate-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors flex items-center justify-center group select-none"
+            >
+              <div className="w-0.5 h-10 rounded-full bg-gray-400 dark:bg-slate-500 group-hover:bg-blue-500 transition-colors" />
             </div>
-            <ChatWindow car={selectedCar} currency={user?.currency} onAddCar={() => setView('addcar')} onRecordSaved={bumpData} />
-          </aside>
+            <aside
+              style={{ width: chatWidth }}
+              className="flex-none flex flex-col border-l border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 min-w-0"
+            >
+              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">💬 {t('chatTitle')}</span>
+                <button onClick={toggleChat} title="Свернуть" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+              </div>
+              <ChatWindow car={selectedCar} currency={user?.currency} user={user} refreshKey={dataVersion} onAddCar={() => setView('addcar')} onRecordSaved={bumpData} />
+            </aside>
+          </>
         )}
       </div>
 
@@ -181,7 +241,7 @@ function RecordsPanel({ car, currency, onAddCar, onChanged, refreshKey }) {
     );
   }
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <HistorySidebar car={car} currency={currency} onChanged={onChanged} refreshKey={refreshKey} />
     </div>
   );

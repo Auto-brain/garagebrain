@@ -17,6 +17,7 @@ type ServiceRecord struct {
 	Mileage       *int            `json:"mileage"`
 	Cost          *float64        `json:"cost"`
 	PartsCost     *float64        `json:"parts_cost"`
+	PartsQty      *int            `json:"parts_qty,omitempty"`
 	Currency      string          `json:"currency"`
 	PartsCurrency string          `json:"parts_currency"`
 	Parts         json.RawMessage `json:"parts"`
@@ -35,6 +36,7 @@ type CreateRecordRequest struct {
 	Mileage       *int            `json:"mileage"`
 	Cost          *float64        `json:"cost"`
 	PartsCost     *float64        `json:"parts_cost"`
+	PartsQty      *int            `json:"parts_qty,omitempty"`
 	Currency      string          `json:"currency"`
 	PartsCurrency string          `json:"parts_currency"`
 	Parts         json.RawMessage `json:"parts"`
@@ -49,6 +51,7 @@ type UpdateRecordRequest struct {
 	Mileage       *int     `json:"mileage"`
 	Cost          *float64 `json:"cost"`
 	PartsCost     *float64 `json:"parts_cost"`
+	PartsQty      *int     `json:"parts_qty,omitempty"`
 	Currency      string   `json:"currency"`
 	PartsCurrency string   `json:"parts_currency"`
 }

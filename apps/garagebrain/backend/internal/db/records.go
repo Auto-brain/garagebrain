@@ -10,23 +10,23 @@ import (
 
 // recordCols / scanRecord — единый список колонок и разбор строки записи,
 // чтобы не дублировать порядок полей по нескольким запросам.
-const recordCols = "id, car_id, type, title, description, date, mileage, cost, parts_cost, COALESCE(currency,''), COALESCE(parts_currency,''), parts, workshop, photos, raw_input, created_at"
+const recordCols = "id, car_id, type, title, description, date, mileage, cost, parts_cost, parts_qty, COALESCE(currency,''), COALESCE(parts_currency,''), parts, workshop, photos, raw_input, created_at"
 
 func scanRecord(row interface {
 	Scan(dest ...any) error
 }) (model.ServiceRecord, error) {
 	var r model.ServiceRecord
 	err := row.Scan(&r.ID, &r.CarID, &r.Type, &r.Title, &r.Description, &r.Date, &r.Mileage, &r.Cost,
-		&r.PartsCost, &r.Currency, &r.PartsCurrency, &r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
+		&r.PartsCost, &r.PartsQty, &r.Currency, &r.PartsCurrency, &r.Parts, &r.Workshop, &r.Photos, &r.RawInput, &r.CreatedAt)
 	return r, err
 }
 
 func CreateRecord(ctx context.Context, req model.CreateRecordRequest) (*model.ServiceRecord, error) {
 	r, err := scanRecord(Pool.QueryRow(ctx,
-		`INSERT INTO service_records (car_id, type, title, description, date, mileage, cost, parts_cost, currency, parts_currency, parts, workshop)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULLIF($9,''),NULLIF($10,''),$11,$12)
+		`INSERT INTO service_records (car_id, type, title, description, date, mileage, cost, parts_cost, parts_qty, currency, parts_currency, parts, workshop)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NULLIF($10,''),NULLIF($11,''),$12,$13)
 		 RETURNING `+recordCols,
-		req.CarID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost,
+		req.CarID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost, req.PartsQty,
 		req.Currency, req.PartsCurrency, req.Parts, req.Workshop,
 	))
 	if err != nil {
@@ -98,10 +98,10 @@ func UpdateRecord(ctx context.Context, recordID uuid.UUID, req model.UpdateRecor
 	r, err := scanRecord(Pool.QueryRow(ctx,
 		`UPDATE service_records
 		 SET type = $2, title = $3, description = $4, date = $5, mileage = $6, cost = $7,
-		     parts_cost = $8, currency = NULLIF($9,''), parts_currency = NULLIF($10,'')
+		     parts_cost = $8, parts_qty = $9, currency = NULLIF($10,''), parts_currency = NULLIF($11,'')
 		 WHERE id = $1
 		 RETURNING `+recordCols,
-		recordID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost, req.Currency, req.PartsCurrency,
+		recordID, req.Type, req.Title, req.Description, req.Date, req.Mileage, req.Cost, req.PartsCost, req.PartsQty, req.Currency, req.PartsCurrency,
 	))
 	if err != nil {
 		return nil, err
