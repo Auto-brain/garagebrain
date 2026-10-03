@@ -57,5 +57,5 @@ func main() {
 	}
 
 	log.Printf("Gateway starting on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(http.ListenAndServe(os.Getenv("HOST")+":"+port, r))
 }
